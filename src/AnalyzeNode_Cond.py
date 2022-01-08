@@ -725,12 +725,12 @@ class AnalyzeNode_Cond(object):
 	
 		MaxDepth = max([node.depth for node in self.trimList])
 
-		print("MAXDEPTH1:{MaxDepth}".format(MaxDepth=MaxDepth))
+		# print("MAXDEPTH1:{MaxDepth}".format(MaxDepth=MaxDepth))
 		while (MaxDepth >= bound_min and MaxDepth >= bound_max):
 			#MaxOps = max([node.f_expression.__countops__() for node in self.trimList])
 			print("MAXDEPTH2:{MaxDepth}".format(MaxDepth=MaxDepth))
 			MaxDepth = self.abstractAnalysis(MaxDepth, bound_min, bound_max)
-		print("out of while")
+		# print("out of while")
 		if MaxDepth==0 :
 			return self.default_res()
 		(self.parent_dict, self.cond_syms) = helper.expression_builder(self.trimList)

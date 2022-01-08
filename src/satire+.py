@@ -161,32 +161,13 @@ def full_analysis(probeList, argList, maxdepth):
 	#	print(k,v)
 	#obj = AnalyzeNode_Cond(probeList, argList, maxdepth)
 	#obj.start()
-	print("\n-----------------------------------")
-	print("Full Analysis Block:\n")
+	# print("\n-----------------------------------")
+	# print("Full Analysis Block:\n")
 	res = simplify_with_abstraction(probeList, argList, maxdepth,final=True)
-	print("-----------------------------------\n")
+	# print("-----------------------------------\n")
 	print(res)
 	return res
-	
 
-#def ErrorAnalysis(argList):
-#
-#	probeList = helper.getProbeList()
-#	maxdepth = max([max([n[0].depth for n in nodeList])  for nodeList in probeList])
-#	print("maxdepth = ", maxdepth)
-#	probeList = [nodeList[0][0] for nodeList in probeList]
-#
-#	## Check on the conditonal nodes----------
-#	## ---------------------------------------
-#	#for k,v in Globals.predTable.items():
-#	#	print(k, v.rec_eval(v), type(v).__name__)
-#
-#	#for k,v in Globals.condTable.items():
-#	#	print(k, v.rec_eval(v))
-#
-#
-#
-#	full_analysis(probeList, argList, maxdepth)
 
 def mod_probe_list(probeNodeList):
 	probeList = helper.getProbeList()
@@ -201,16 +182,24 @@ def mod_probe_list(probeNodeList):
 	#	for dep in v:
 	#		print(k.depth, dep.depth, dep.rec_eval(dep))
 	#print("From here:", [op.rec_eval(op) for op in opList])
+
 def ErrorAnalysis(argList):
 
 	absCount = 1
 	probeList = helper.getProbeList()
 	maxdepth = max([max([n[0].depth for n in nodeList])  for nodeList in probeList])
-	print("maxdepth = ", maxdepth)
+	# print("maxdepth = ", maxdepth)
 	logger.info("Full AST_DEPTH : {ast_depth}".format(ast_depth=maxdepth))
 	probeList = [nodeList[0][0] for nodeList in probeList]
 	bound_mindepth, bound_maxdepth = argList.mindepth, argList.maxdepth
 
+	# # Check on the conditonal nodes----------
+	# # ---------------------------------------
+	# for k, v in Globals.predTable.items():
+	# 	print(k, v.rec_eval(v), type(v).__name__)
+	#
+	# for k, v in Globals.condTable.items():
+	# 	print(k, v.rec_eval(v))
 
 	if ( argList.enable_abstraction ) :
 		print("\nAbstraction Enabled... \n")
@@ -282,7 +271,7 @@ if __name__ == "__main__":
 	end_parse_time = time.time()
 	parse_time = end_parse_time - start_parse_time
 	logger.info("Parsing time : {parse_time} secs".format(parse_time = parse_time))
-	print("LEVEL_TOP: End of Parsing: Parsing time : {parse_time} secs".format(parse_time = parse_time))
+	# print("LEVEL_TOP: End of Parsing: Parsing time : {parse_time} secs".format(parse_time = parse_time))
 
 
 
