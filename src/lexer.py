@@ -3,34 +3,38 @@ from gtokens import *
 import symengine as seng
 from sly import Lexer
 
+
 class Slex(Lexer):
 
-	tokens = { INPUTS, OUTPUTS, EXPRS, REQUIRES,		\
-				INTEGER, FLOAT, PLUS,  		\
-				MINUS, MUL, DIV, SQRT, 		\
-				SIN, ASIN, COS, TAN, COT, COSH, 	\
-				SINH, LOG, EXP, IDEN, 		\
-				EQ, NEQ, \
-				ASSIGN, LPAREN, RPAREN, 	\
-				SLPAREN, SRPAREN, COLON,	\
-				SEMICOLON, COMMA, ID, FPTYPE, INTTYPE, \
-				IF, THEN, ELSE, ENDIF, AND, \
-				OR, NOT, LEQ, LT, GEQ, GT	\
-			}
+	# Tokens declared in the same order as defined in gtokens.py
+	tokens = {
+		INPUTS, OUTPUTS, EXPRS, REQUIRES,
+		IF, THEN, ELSE, ENDIF,
+		INTEGER, FLOAT,
+		SIN, ASIN, COS, TAN, COT, COSH, SINH,
+		SQRT, LOG, EXP, IDEN,
+		PLUS, MINUS, MUL, DIV,
+		EQ, NEQ, LEQ, LT, GEQ, GT,
+		AND, OR, NOT,
+		ASSIGN, COLON, SEMICOLON, COMMA, ID,
+		LPAREN, RPAREN, SLPAREN, SRPAREN,
+		FPTYPE, INTTYPE,
+	}
 
+	# Ignore spaces, tabs and anything followed by #
 	ignore = ' \t'
 	ignore_comment = r'\#.*'
 
 	# regular expressions
-	PLUS		=	r'\+'	
-	MUL			=	r'\*'	
-	DIV			=	r'\/'	
-	EQ			=	r'\=='	
-	NEQ			=	r'\!='	
-	ASSIGN		=	r'\='	
-	LPAREN		=	r'\('	
-	RPAREN		=	r'\)'	
-	SLPAREN		=	r'\{'	
+	PLUS		=	r'\+'
+	MUL			=	r'\*'
+	DIV			=	r'\/'
+	EQ			=	r'\=='
+	NEQ			=	r'\!='
+	ASSIGN		=	r'\='
+	LPAREN		=	r'\('
+	RPAREN		=	r'\)'
+	SLPAREN		=	r'\{'
 	SRPAREN		=	r'\}'
 	COLON		=	r'\:'
 	SEMICOLON	=	r'\;'
@@ -43,7 +47,10 @@ class Slex(Lexer):
 	GEQ			=	r'\>='
 	GT			=	r'\>'
 
+	# Regular expression for ID
 	ID				=	r'[a-zA-Z][a-zA-Z0-9_]*'
+
+	# Remapping some reserved words recognized as ID to the correct tokens.
 	ID['INPUTS']	=	INPUTS
 	ID['OUTPUTS']	=	OUTPUTS
 	ID['EXPRS']		=	EXPRS
@@ -70,21 +77,22 @@ class Slex(Lexer):
 	ID['else']		=	ELSE
 	ID['endif']		=	ENDIF
 
-
 	current_token = None
 	tok = None
 
-
+	# Converting all values recognized as IDs to symbolic values.
 	def ID(self, t):
 		if t.type not in  (INPUTS, OUTPUTS, EXPRS, REQUIRES):
 			t.value = seng.var(t.value)
 		return t
 
+	# @_() Decorator used to specify regular expression for FLOAT. Converting value to float.
 	@_(r'[\-]?\d+\.\d+([eE][-+]?\d+)?')
 	def FLOAT(self, t):
 		t.value = float(t.value)
 		return t
 
+	# @_() Decorator used to specify regular expression for INTEGER. Converting value to int.
 	@_(r'[\-]?\d+')
 	def INTEGER(self, t):
 		t.value = int(t.value)
@@ -93,10 +101,12 @@ class Slex(Lexer):
 
 	MINUS	=	r'\-'
 
+	# Reg ex for one or more new lines. Increment line number.
 	@_(r'\n+')
 	def ignore_newline(self, t):
 		self.lineno += t.value.count('\n')
 
+	# Message to be printed when character not recognized.
 	def error(self, t):
 		print('Line %d: Bad character %r' % (self.lineno, t.value[0]))
 
