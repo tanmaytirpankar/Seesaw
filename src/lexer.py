@@ -31,21 +31,23 @@ class Slex(Lexer):
 	DIV			=	r'\/'
 	EQ			=	r'\=='
 	NEQ			=	r'\!='
+	LEQ 		=	r'\<='
+	LT 			=	r'\<'
+	GEQ 		=	r'\>='
+	GT 			=	r'\>'
+	AND 		=	r'\&&'
+	OR 			=	r'\|\|'
+	NOT 		=	r'\!'
+	LPAREN 		=	r'\('
+	RPAREN 		=	r'\)'
+	SLPAREN 	=	r'\{'
+	SRPAREN 	=	r'\}'
 	ASSIGN		=	r'\='
-	LPAREN		=	r'\('
-	RPAREN		=	r'\)'
-	SLPAREN		=	r'\{'
-	SRPAREN		=	r'\}'
 	COLON		=	r'\:'
 	SEMICOLON	=	r'\;'
 	COMMA		=	r'\,'
-	AND			=	r'\&&'
-	OR			=	r'\|\|'
-	NOT			=	r'\!'
-	LEQ			=	r'\<='
-	LT			=	r'\<'
-	GEQ			=	r'\>='
-	GT			=	r'\>'
+
+
 
 	# Regular expression for ID
 	ID				=	r'[a-zA-Z][a-zA-Z0-9_]*'
@@ -55,27 +57,29 @@ class Slex(Lexer):
 	ID['OUTPUTS']	=	OUTPUTS
 	ID['EXPRS']		=	EXPRS
 	ID['REQUIRES']	=	REQUIRES
-	ID['sqrt']		=	SQRT
+	ID['if'] 		= 	IF
+	ID['then'] 		= 	THEN
+	ID['else'] 		= 	ELSE
+	ID['endif'] 	= 	ENDIF
 	ID['sin']		= 	SIN
 	ID['asin']		= 	SIN
 	ID['cos']		= 	COS
-	ID['log']		= 	LOG
-	ID['exp']		= 	EXP
 	ID['tan']		= 	TAN
 	ID['cot']		= 	COT
 	ID['cosh']		= 	COSH
 	ID['sinh']		= 	SINH
+	ID['sqrt'] 		= 	SQRT
+	ID['log'] 		= 	LOG
+	ID['exp'] 		= 	EXP
+
+	# ['rnd16', 'rnd32', 'rnd64', 'fl16', 'fl32', 'fl64'] = FPTYPE
 	ID['rnd16'] 	= 	FPTYPE
-	ID['rnd32'] 	= 	FPTYPE # 'rnd64', 'fl16', 'fl32', 'fl64'] = FPTYPE
+	ID['rnd32'] 	= 	FPTYPE
 	ID['rnd64'] 	= 	FPTYPE
 	ID['fl16']  	= 	FPTYPE
 	ID['fl32']  	= 	FPTYPE
 	ID['fl64']  	= 	FPTYPE
 	ID['int']		= 	INTTYPE
-	ID['if']		=	IF
-	ID['then']		=	THEN
-	ID['else']		=	ELSE
-	ID['endif']		=	ENDIF
 
 	current_token = None
 	tok = None
@@ -99,6 +103,7 @@ class Slex(Lexer):
 		t.type = INTEGER
 		return t
 
+	# Placed after FLOAT and INTEGER so negative values are not ignored.
 	MINUS	=	r'\-'
 
 	# Reg ex for one or more new lines. Increment line number.
@@ -106,7 +111,7 @@ class Slex(Lexer):
 	def ignore_newline(self, t):
 		self.lineno += t.value.count('\n')
 
-	# Message to be printed when character not recognized.
+	# Message to be printed when character not recognized. Overrides base method.
 	def error(self, t):
 		print('Line %d: Bad character %r' % (self.lineno, t.value[0]))
 
