@@ -39,7 +39,7 @@ GS = dict()
 
 
 ## Record of nodes at each depth
-## depthTable[depth=d] = [list of nodes at depth=d
+## depthTable[depth=d] = {set of nodes at depth=d}
 depthTable = defaultdict(set)
 
 
