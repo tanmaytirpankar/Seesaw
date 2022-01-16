@@ -232,7 +232,7 @@ class FreeVar(AST):
 			Sets rounding and returns the interval node or a new symengine variable.
 			Parameters
 			----------
-			obj : node type
+			self : node type
 			round_mode : string
 				Describes rounding mode at the node.
 			Returns
@@ -241,16 +241,16 @@ class FreeVar(AST):
 			seng.var(name) : symengine variable
 				Symengine variable called 'name'
 		"""
-		name = str(obj.token.value)
-		obj.depth = 0
-		intv = Globals.inputVars.get(obj.token.value, None)
+		name = str(self.token.value)
+		self.depth = 0
+		intv = Globals.inputVars.get(self.token.value, None)
 		print(intv)
 		if intv is not None and intv["INTV"] is None:
 			return SymTup((Sym(0.0, Globals.__F__),))
 		elif intv is not None and (intv["INTV"][0]==intv["INTV"][1]):
 			return SymTup((Sym( intv["INTV"][0], Globals.__T__),))
 		else:
-			return SymTup((Sym(obj.token.value, Globals.__T__),))
+			return SymTup((Sym(self.token.value, Globals.__T__),))
 
 	
 	#@staticmethod
