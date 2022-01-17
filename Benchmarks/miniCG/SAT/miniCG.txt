@@ -1,0 +1,102 @@
+
+INPUTS {
+    b1 fl64 :(0.98,1.0);
+    b2 fl64 :(1.98,2.0);
+
+    ## Initial v vector
+    v1 fl64 : (2.0,2.0);
+    v2 fl64 : (1.0,1.0);
+
+    ## A matrix
+    A11 fl64 : (4.0,4.0);
+    A12 fl64 : (1.0,1.0);
+    A21 fl64 : (1.0,1.0);
+    A22 fl64 : (3.0,3.0);
+}
+
+OUTPUTS {
+    norm_error;
+}
+
+REQUIRES {
+}
+
+EXPRS {
+
+    ############## Initializations ###############
+    ## Initialization of r
+    tmp1 rnd64 = (A11 * v1) + (A12 * v2);
+    tmp2 rnd64 = (A21 * v1) + (A22 * v2);
+    r1 rnd64 = b1 - tmp1;
+    r2 rnd64 = b2 - tmp2;
+
+    ## Initialization of d
+    d1 rnd64 = r1;
+    d2 rnd64 = r2;
+
+    ############### Loop iteration 1 ###############
+    ## Set q
+    q1 rnd64 = (A11 * d1) + (A12 * d2);
+    q2 rnd64 = (A21 * d1) + (A22 * d2);
+
+    ## Set alpha
+    alpha_num rnd64 = (r1 * r1) + (r2 * r2);
+    alpha_den rnd64 = (d1 * q1) + (d2 * q2);
+    alpha rnd64 = alpha_num / alpha_den;
+
+    ## Set next v
+    v_right1 rnd64 = alpha * d1;
+    v_right2 rnd64 = alpha * d2;
+    v_new1 rnd64 = v1 + v_right1;
+    v_new2 rnd64 = v2 + v_right2;
+
+    ## Set next r
+    r_right1 rnd64 = alpha * q1;
+    r_right2 rnd64 = alpha * q2;
+    r_new1 rnd64 = r1 - r_right1;
+    r_new2 rnd64 = r2 - r_right2;
+
+    ## Set beta
+    beta_num rnd64 = (r_new1 * r_new1) + (r_new2 * r_new2);
+    beta_den rnd64 = (r1 * r1) + (r2 * r2);
+    beta rnd64 = beta_num / beta_den;
+
+    ## Set new d
+    d_right1 rnd64 = beta * d1;
+    d_right2 rnd64 = beta * d2;
+    d_new1 rnd64 = r_new1 + d_right1;
+    d_new2 rnd64 = r_new2 + d_right2;
+
+    ### Updating new variables
+    v1_2 rnd64= v_new1;
+    v2_2 rnd64= v_new2;
+    r1_2 rnd64= r_new1;
+    r2_2 rnd64= r_new2;
+    d1_2 rnd64= d_new1;
+    d2_2 rnd64= d_new2;
+
+    ############### Loop iteration 2 ###############
+    ## Set q
+    q1_2 rnd64= (A11 * d_new1) + (A12 * d_new2);
+    q2_2 rnd64= (A21 * d_new1) + (A22 * d_new2);
+
+    ## Set alpha
+    alpha_num_2 rnd64= (r1_2 * r1_2) + (r2_2 * r2_2);
+    alpha_den_2 rnd64= (d1_2 * q1_2) + (d2_2 * q2_2);
+    alpha_2 rnd64= alpha_num_2 / alpha_den_2;
+
+    ## Set next v
+    v_right1_2 rnd64= alpha_2 * d1_2;
+    v_right2_2 rnd64= alpha_2 * d2_2;
+    v_new1_2 rnd64= v1_2 + v_right1_2;
+    v_new2_2 rnd64= v2_2 + v_right2_2;
+
+    ## Set next r
+    r_right1_2 rnd64= alpha_2 * q1_2;
+    r_right2_2 rnd64= alpha_2 * q2_2;
+    r_new1_2 rnd64= r1_2 - r_right1_2;
+    r_new2_2 rnd64= r2_2 - r_right2_2;
+
+    ## Residual norm (error)
+    norm_error rnd64= sqrt((r_new1_2 * r_new1_2) + (r_new2_2 * r_new2_2));
+}

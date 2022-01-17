@@ -1,0 +1,14 @@
+INPUTS	{ a fl64 :(-1.0, 2.0) ;
+	  b fl64 :(-1.0, 1.0) ;
+	  c fl64 :(-1.0, 1.0) ;
+	}
+
+OUTPUTS { r ; }
+
+REQUIRES {
+	c: (c > 0.1);2
+}
+
+EXPRS {
+	r rnd64 = a+c ;
+}

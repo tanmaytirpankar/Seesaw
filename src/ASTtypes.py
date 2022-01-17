@@ -427,7 +427,7 @@ class TransOp(AST):
 				String representation of the class.
 		"""
 		repr_str = '\nTransOp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
-				   + '\n\tchildren:' + repr(self.children.token.value) \
+				   + '\n\tchildren:' + repr(self.children[0].token.value) \
 				   + '\n}'
 		return repr_str
 
