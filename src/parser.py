@@ -6,7 +6,6 @@ from ASTtypes import *
 from collections import deque
 from SymbolTable import *
 
-import copy
 import sys
 import helper
 
@@ -17,10 +16,13 @@ import time
 import copy
 from sympy.plotting.intervalmath import interval
 
+
 class Sparser(object):
 
 	tokens = Slex.tokens
 
+	# __slots__ tells python to not use a dynamic dict for its class instances and statically allocates memory only for
+	# specified instance members. Look at https://book.pythontips.com/en/latest/__slots__magic.html
 	__slots__ = ['lexer', 'current_token', 'scopeStack', 'current_scope', 'current_symtab']
 
 	def __init__(self, lexer):
@@ -30,10 +32,10 @@ class Sparser(object):
 		self.current_symtab = None
 		self.current_scope = Globals.scopeID
 
-
 	def error(self):
 		raise Exception('Invalid syntax while parsing')
 
+	# Consume the current token if type matches the specified type and get next token.
 	def consume(self, token_type):
 		#print(self.current_token.type, token_type, self.current_token.value, self.current_token.lineno)
 		if self.current_token.type == token_type:
@@ -41,41 +43,27 @@ class Sparser(object):
 		else:
 			self.error()
 
+	def intv_eval(self, expr, lower=False):
+		free_syms = list(expr.free_symbols)
+		if len(free_syms) == 1:
+			fsym = free_syms[0]
+			f = sympy.lambdify(fsym, expr)
+			intv = f(interval(Globals.inputVars[fsym]["INTV"][0], Globals.inputVars[fsym]["INTV"][1]))
+		else:
+			f = sympy.lambdify([tuple(free_syms)], expr)
+			intv = f([tuple(
+				interval(Globals.inputVars[var]["INTV"][0], Globals.inputVars[var]["INTV"][1]) for var in free_syms)])
+
+		return intv.mid - intv.width / 2 if lower else intv.mid + intv.width / 2
+
 	def addDepthInfo(self, node):
 		Globals.depthTable[node.depth].add(node)
-
-	def arith_expr(self):
-		"""
-		expr	:	term ( ( PLUS | MINUS) term )*
-		"""
-
-		node = self.arith_term()
-		while self.current_token.type in (PLUS, MINUS):
-			token = self.current_token
-			self.consume(token.type)
-			node = BinOp(left=node, token=token, right=self.arith_term())
-			self.addDepthInfo(node)
-
-		return node
-
-	def arith_term(self):
-		"""
-		term	:	factor ( ( MUL | DIV) factor)*
-		"""
-
-		node = self.arith_factor()
-		while self.current_token.type in (MUL, DIV):
-			token = self.current_token
-			self.consume(token.type)
-			node = BinOp(left=node, token=token, right=self.arith_factor())
-			self.addDepthInfo(node)
-
-		return node
 
 	def CheckSymTable(self, node, token):
 		#symTable = Globals.GS[scopeID]
 		lval = self.current_symtab.lookup(token.value)
 		if lval is None or len(lval)==0:
+			# TODO: What is this? Asserting the opposite of the if condition inside the if block. How will it ever trigger?
 			if token.value not in Globals.inputVars.keys():
 				print(token.value)
 				assert(token.value in Globals.inputVars.keys())
@@ -91,30 +79,6 @@ class Sparser(object):
 			self.addDepthInfo(newNode)
 			self.current_symtab._symTab[token.value] = ((newNode,Globals.__T__),)
 			return newNode
-
-	def arith_factor(self):
-		token = self.current_token
-		if token.type in (INTEGER, FLOAT):
-			self.consume(token.type)
-			return Num(token)
-		elif token.type in (SQRT, SIN, COS, ASIN, TAN, EXP):
-			self.consume(token.type)
-			node = TransOp(self.arith_factor(), token)
-			self.addDepthInfo(node)
-			return node
-		elif token.type == LPAREN:
-			self.consume(LPAREN)
-			node = self.arith_expr()
-			self.consume(RPAREN)
-			self.addDepthInfo(node)
-			return node
-		else :
-			node = Var(token)
-			self.consume(ID)
-			if(token.value == seng.var('px4')):
-				print("MASSIVE DEBUG:", self.current_symtab.lookup(token.value))
-			node = self.CheckSymTable(node, token)
-			return node
 
 	def get_new_condSym(self):
 		Globals.CSID += 1
@@ -139,44 +103,6 @@ class Sparser(object):
 		## update the current state
 		self.current_symtab = symTab
 		self.current_scope = Globals.scopeID
-
-	##-------------------------------------------
-	## The parsing of cond-expr and cond-term
-	## are placeholders for now.
-	## will be worked on details shortly
-	##------------------------------------------- begin --
-	def cond_expr(self):
-		"""
-		cond_expr	:	cond_term ( (&& | ||) cond_term)*
-		"""
-		node = self.cond_term()
-		while self.current_token.type in (AND, OR):
-			token = self.current_token
-			self.consume(token.type)
-			node = BinLiteral(left=node, token=token, right=self.cond_term())
-
-		return node
-
-	def cond_term(self):
-		"""
-		cond_term : ( expr inequalities expr )
-		"""
-		if (self.current_token.type == LPAREN):
-			self.consume(LPAREN)
-			node = self.cond_expr()
-			self.consume(RPAREN)
-			return node
-		node = self.arith_expr()
-		if self.current_token.type in (LT, LEQ, GT, GEQ, EQ, NEQ):
-			token = self.current_token
-			self.consume(token.type)
-			node = ExprComp(left=node, token=token, right=self.arith_expr())
-			#self.consume(RPAREN)
-			return node
-		else:
-			self.error()
-	##--------------------------------------------- end --
-
 
 	def parallel_merge(self, symTab1, symTab2, scope):
 		assert(symTab1._symTab['_caller_'] == symTab2._symTab['_caller_'])
@@ -205,7 +131,6 @@ class Sparser(object):
 				#newtab._symTab[k] = [(node, Globals.__T__)]
 
 		return newtab
-
 
 	def serial_merge(self, symTab1, symTab2, scope):
 		print( symTab1._scope, symTab2._scope)
@@ -245,9 +170,6 @@ class Sparser(object):
 		## check back if node lifting is required in serial merge
 		return newtab
 
-
-
-
 	def mergeSymTbale(self):
 		print("Stack:", self.scopeStack)
 		item = self.scopeStack.pop()
@@ -267,10 +189,303 @@ class Sparser(object):
 		self.current_symtab = serialSymTab
 		self.scopeStack.append(parent_scope_info)
 
+	# Input parsing
+	def intv_factor(self):
+		"""
+		intv_factor	:	[INTEGER | FLOAT]
+					|	[SIN | ASIN | COS | TAN | SQRT | EXP] intv_factor
+					|	LPAREN intv_expr RPAREN
+					|	ID
+		"""
+		token = self.current_token
+		if token.type in (INTEGER, FLOAT):
+			self.consume(token.type)
+			return Num(token)
+		elif token.type in (SQRT, SIN, ASIN, COS, TAN, EXP):
+			self.consume(token.type)
+			node = TransOp(self.intv_factor(), token)
+			return node
+		elif token.type == LPAREN:
+			self.consume(LPAREN)
+			node = self.intv_expr()
+			self.consume(RPAREN)
+			return node
+		elif token.type == ID:
+			node = FreeVar(token)
+			dep_var = Globals.inputVars.get(token.value)
+			self.consume(ID)
+			if dep_var is None:
+				print("Undefined Variable in input declaration expression")
+				self.error()
+			else:
+				return node
+		else:
+			self.error()
+
+	def intv_term(self):
+		"""
+		intv_term	:	intv_factor ([MUL | DIV] factor)*
+		"""
+
+		node = self.intv_factor()
+		while self.current_token.type in (MUL, DIV):
+			token = self.current_token
+			self.consume(token.type)
+			node = BinOp(left=node, token=token, right=self.intv_factor())
+
+		return node
+
+	def intv_expr(self):
+		"""
+		intv_expr	:	intv_term ([PLUS | MINUS] intv_term )*
+		"""
+
+		node = self.intv_term()
+		while self.current_token.type in (PLUS, MINUS):
+			token = self.current_token
+			self.consume(token.type)
+			node = BinOp(left=node, token=token, right=self.intv_term())
+
+		return node
+
+	def interval(self):
+		"""
+		interval	:	ID FPTYPE COLON LPAREN intv_expr COMMA intv_expr RPAREN
+					|	<empty>
+		"""
+		while self.current_token.type == ID:
+			var_token = self.current_token
+			name = str(self.current_token.value)
+			self.consume(ID)
+			fptype = str(self.current_token.value)
+			self.consume(FPTYPE)
+			self.consume(COLON)
+			self.consume(LPAREN)
+			## check bater later here for expressions
+			n = self.intv_expr()
+			left = n.rec_eval(n)
+			lexpr = left[0].exprCond[0]
+			lexpr = lexpr if seng.count_ops(lexpr) == 0 else self.intv_eval(lexpr, lower=True)
+			# left = self.current_token.value
+			# self.consume(FLOAT)
+			self.consume(COMMA)
+
+			n = self.intv_expr()
+			right = n.rec_eval(n)
+			rexpr = right[0].exprCond[0]
+			rexpr = rexpr if seng.count_ops(rexpr) == 0 else self.intv_eval(rexpr)
+
+			# print("Interval:", lexpr, rexpr)
+			# self.consume(COMMA)
+			# right = self.current_token.value
+			# self.consume(FLOAT)
+			self.consume(RPAREN)
+
+			symVar = FreeVar(var_token, cond=Globals.__T__)
+			symVar.set_noise(symVar, (rexpr * pow(2, -53), 0.0))
+			symVar.set_rounding(fptype)
+			# self.current_symtab.insert(var_token.value, [[symVar,Globals.__T__]])
+			self.current_symtab.insert(var_token.value, ((symVar, Globals.__T__),))
+			Globals.inputVars[var_token.value] = {"INTV": [lexpr, \
+														   rexpr]}
+
+	def interval_list(self):
+		"""
+		interval_list	:	interval (SEMICOLON interval)*
+		"""
+		self.interval()
+
+		while self.current_token.type == SEMICOLON:
+			self.consume(SEMICOLON)
+			self.interval()
+
+	def parse_input(self):
+		"""
+		parse_input	:	INPUTS SLPAREN interval_list SRPAREN
+		"""
+		self.consume(INPUTS)
+		self.consume(SLPAREN)
+		self.interval_list()
+		self.consume(SRPAREN)
+
+	# -------------------------------------------------------------------------------------
+	# OUtput parsing
+
+	def output(self):
+		# TODO: What if there are more than one ID separated by spaces? Does the program evaluate multiple outputs?
+		"""
+		output	:	ID
+				|	<empty>
+		"""
+		while self.current_token.type == ID:
+			nameSym = self.current_token.value
+			self.consume(ID)
+			Globals.outVars.append(nameSym)
+
+	def output_list(self):
+		"""
+		output_list : output (SEMICOLON output)*
+		"""
+		self.output()
+
+		while self.current_token.type == SEMICOLON:
+			self.consume(SEMICOLON)
+			self.output()
+
+	def parse_output(self):
+		"""
+		parse_output : OUTPUTS SLPAREN output_list SRPAREN
+		"""
+		self.consume(OUTPUTS)
+		self.consume(SLPAREN)
+		self.output_list()
+		self.consume(SRPAREN)
+
+	# -------------------------------------------------------------------------------------
+	# Constraints parsing
+	##-------------------------------------------
+	## The parsing of cond-expr and cond-term
+	## are placeholders for now.
+	## will be worked on details shortly
+	##------------------------------------------- begin --
+	def cond_term(self):
+		"""
+		cond_term : (expr [EQ | NEQ | LT | LEQ | GT | GEQ] expr)
+		"""
+		if (self.current_token.type == LPAREN):
+			self.consume(LPAREN)
+			node = self.cond_expr()
+			self.consume(RPAREN)
+			return node
+		node = self.arith_expr()
+		if self.current_token.type in (EQ, NEQ, LT, LEQ, GT, GEQ):
+			token = self.current_token
+			self.consume(token.type)
+			node = ExprComp(left=node, token=token, right=self.arith_expr())
+			# self.consume(RPAREN)
+			return node
+		else:
+			self.error()
+
+	def cond_expr(self):
+		"""
+		cond_expr	:	cond_term ( (&& | ||) cond_term)*
+		"""
+		node = self.cond_term()
+		while self.current_token.type in (AND, OR):
+			token = self.current_token
+			self.consume(token.type)
+			node = BinLiteral(left=node, token=token, right=self.cond_term())
+
+		return node
+
+	##--------------------------------------------- end --
+
+	def assign_constraint_expr(self):
+		"""
+		assign_constraint_expr : ID COLON cond_expr
+								| <empty>
+		"""
+		print(""" assign_constraint_expr : ID COLON cond_expr """)
+		if self.current_token.type == ID:
+			name = str(self.current_token.value)
+			nameToken = self.current_token
+			self.consume(ID)
+			self.consume(COLON)
+			node = self.cond_expr()
+			print("CONSTRAINTS: ", node.rec_eval(node))
+			node_exists = Globals.externPredTable.get(nameToken.value, None)
+			if node_exists is not None:
+				self.error()
+			Globals.externPredTable[nameToken.value] = node
+
+	def constraint_list(self):
+		"""
+		constraint_list : assign_constraint_expr (SEMICOLON assign_constraint_expr)*
+		"""
+		self.assign_constraint_expr()
+
+		while self.current_token.type == SEMICOLON:
+			self.consume(SEMICOLON)
+			self.assign_constraint_expr()
+
+	def parse_constraints(self):
+		"""
+		parse_constraints : REQUIRES SLPAREN constraint_list SRPAREN
+		"""
+		if self.current_token.type != REQUIRES:
+			pass
+		else:
+			self.consume(REQUIRES)
+			self.consume(SLPAREN)
+			self.constraint_list()
+			self.consume(SRPAREN)
+
+	# -------------------------------------------------------------------------------------
+	# Exprs Parsing
+
+	def arith_factor(self):
+		"""
+		arith_factor	:	[INTEGER | FLOAT]
+						| [SIN | ASIN | COS | TAN | SQRT | EXP] arith_factor
+						| LPAREN arith_expr RPAREN
+						| ID
+		"""
+
+		token = self.current_token
+		if token.type in (INTEGER, FLOAT):
+			self.consume(token.type)
+			return Num(token)
+		elif token.type in (SQRT, SIN, ASIN, COS, TAN, EXP):
+			self.consume(token.type)
+			node = TransOp(self.arith_factor(), token)
+			self.addDepthInfo(node)
+			return node
+		elif token.type == LPAREN:
+			self.consume(LPAREN)
+			node = self.arith_expr()
+			self.consume(RPAREN)
+			self.addDepthInfo(node)
+			return node
+		else :
+			node = Var(token)
+			self.consume(ID)
+			if(token.value == seng.var('px4')):
+				print("MASSIVE DEBUG:", self.current_symtab.lookup(token.value))
+			node = self.CheckSymTable(node, token)
+			return node
+
+	def arith_term(self):
+		"""
+		arith_term	:	arith_factor ([MUL | DIV] arith_factor)*
+		"""
+
+		node = self.arith_factor()
+		while self.current_token.type in (MUL, DIV):
+			token = self.current_token
+			self.consume(token.type)
+			node = BinOp(left=node, token=token, right=self.arith_factor())
+			self.addDepthInfo(node)
+
+		return node
+
+	def arith_expr(self):
+		"""
+		arith_expr	:	arith_term ([PLUS | MINUS] arith_term )*
+		"""
+
+		node = self.arith_term()
+		while self.current_token.type in (PLUS, MINUS):
+			token = self.current_token
+			self.consume(token.type)
+			node = BinOp(left=node, token=token, right=self.arith_term())
+			self.addDepthInfo(node)
+
+		return node
 
 	def ifblock(self):
 		"""
-		IFBLOCK : IF <cond_expr> then statements (empty | (else statements)) endif
+		ifblock : IF cond_expr THEN statements (ELSE statements)? ENDIF
 		"""
 		if self.current_token.type == IF:
 			iftoken = self.current_token
@@ -295,6 +510,9 @@ class Sparser(object):
 			self.error()
 
 	def assign_expr(self):
+		"""
+		assign_expr : ID [FPTYPE | INTTYPE] ASSIGN arith_expr SEMICOLON
+		"""
 		if self.current_token.type == ID:
 			name = str(self.current_token.value)
 			nameSym = self.current_token.value
@@ -319,14 +537,10 @@ class Sparser(object):
 			self.current_symtab._symTab[nameSym] = ((node, Globals.__T__),)
 			return node
 
-			
-
-
-
 	def statements(self):
 		"""
-		statements	:	<IFBLOCK>		<statements>
-					|	<ASSIGNEXPR>	<statements>
+		statements	:	ifblock	statements
+					|	assign_expr statements
 					|	<empty>
 		"""
 
@@ -338,53 +552,10 @@ class Sparser(object):
 				node = self.assign_expr()
 		return node
 
-
-	def program(self):
-		""" program : INPUTS OUTPUTS EXPRS """
-		print("Inside Program")
-		## Create symbolTable in the Global scope right here
-		self.create_new_scope(adjacency='serial')
-		##
-		self.parse_input()
-		self.parse_output()
-		self.parse_constraints()
-		self.parse_exec()
-
-	def parse_constraints(self):
-		if self.current_token.type != REQUIRES:
-			pass
-		else:
-			self.consume(REQUIRES)
-			self.consume(SLPAREN)
-			self.constraint_list()
-			self.consume(SRPAREN)
-
-	def constraint_list(self):
-		""" constraint_list : cond_expr | ; | empty """
-		self.assign_constraint_expr()
-
-		while self.current_token.type == SEMICOLON:
-			self.consume(SEMICOLON)
-			self.assign_constraint_expr()
-
-	def assign_constraint_expr(self):
-		print(""" assign_constraint_expr : ID COLON cond_expr """)
-		if self.current_token.type == ID:
-			name = str(self.current_token.value)
-			nameToken = self.current_token
-			self.consume(ID)
-			self.consume(COLON)
-			node = self.cond_expr()
-			print("CONSTRAINTS: ", node.rec_eval(node))
-			node_exists = Globals.externPredTable.get(nameToken.value, None)
-			if node_exists is not None:
-				self.error()
-			Globals.externPredTable[nameToken.value] = node
-		
-		
-
-
 	def parse_exec(self):
+		"""
+		parse_exec : EXPRS SLPAREN statements SRPAREN
+		"""
 		self.consume(EXPRS)
 		self.consume(SLPAREN)
 		begin_node = self.statements()
@@ -403,152 +574,20 @@ class Sparser(object):
 				self.current_symtab._symTab[k] = ((node, cond),)
 				#newtab._symTab[k] = [(node, Globals.__T__)]
 
+	# -------------------------------------------------------------------------------------
 
-	def parse_output(self):
-		""" outputs { outputs list } """
-		self.consume(OUTPUTS)
-		self.consume(SLPAREN)
-		self.output_list()
-		self.consume(SRPAREN)
-
-	def output_list(self):
-		""" output_list : output | ; | empty """
-		self.output()
-
-		while self.current_token.type == SEMICOLON:
-			self.consume(SEMICOLON)
-			self.output()
-
-	def output(self):
-		while self.current_token.type == ID:
-			nameSym = self.current_token.value
-			self.consume(ID)
-			Globals.outVars.append(nameSym)
-
-
-	def parse_input(self):
-		""" input { interval_list } """
-		self.consume(INPUTS)
-		self.consume(SLPAREN)
-		self.interval_list()
-		self.consume(SRPAREN)
-
-	def interval_list(self):
-		""" interval_list : interval | ; | empty """
-		self.interval()
-
-		while self.current_token.type == SEMICOLON:
-			self.consume(SEMICOLON)
-			self.interval()
-
-	##---------------------------------------------------------------------
-
-	def intv_expr(self):
+	def program(self):
 		"""
-		expr	:	term ( ( PLUS | MINUS) term )*
+		program : parse_input parse_output parse_constraints parse_exec
 		"""
-
-		node = self.intv_term()
-		while self.current_token.type in (PLUS, MINUS):
-			token = self.current_token
-			self.consume(token.type)
-			node = BinOp(left=node, token=token, right=self.intv_term())
-
-		return node
-
-	def intv_term(self):
-		"""
-		term	:	factor ( ( MUL | DIV) factor)*
-		"""
-
-		node = self.intv_factor()
-		while self.current_token.type in (MUL, DIV):
-			token = self.current_token
-			self.consume(token.type)
-			node = BinOp(left=node, token=token, right=self.intv_factor())
-
-		return node
-
-
-	def intv_factor(self):
-		token = self.current_token
-		if token.type in (INTEGER, FLOAT):
-			self.consume(token.type)
-			return Num(token)
-		elif token.type in (SQRT, SIN, COS, ASIN, TAN, EXP):
-			self.consume(token.type)
-			node = TransOp(self.intv_factor(), token)
-			return node
-		elif token.type == LPAREN:
-			self.consume(LPAREN)
-			node = self.intv_expr()
-			self.consume(RPAREN)
-			return node
-		elif token.type == ID:
-			node = FreeVar(token)
-			dep_var = Globals.inputVars.get(token.value)
-			self.consume(ID)
-			if dep_var is None:
-				print("Undefined Variable in input declaration expression")
-				self.error()
-			else:
-				return node
-		else :
-			self.error()
-
-
-	##---------------------------------------------------------------------
-
-	def intv_eval(self, expr, lower=False):
-		free_syms = list(expr.free_symbols)
-		if len(free_syms)==1:
-			fsym = free_syms[0]
-			f = sympy.lambdify(fsym, expr)
-			intv = f ( interval(Globals.inputVars[fsym]["INTV"][0], Globals.inputVars[fsym]["INTV"][1]) )
-		else:
-			f = sympy.lambdify([tuple(free_syms)], expr)
-			intv = f( [ tuple( interval(Globals.inputVars[var]["INTV"][0], Globals.inputVars[var]["INTV"][1])   for var in free_syms ) ] )
-	
-		return intv.mid-intv.width/2 if lower else intv.mid+intv.width/2
-
-
-
-	def interval(self):
-		while self.current_token.type == ID:
-			var_token = self.current_token
-			name = str(self.current_token.value)
-			self.consume(ID)
-			fptype = str(self.current_token.value)
-			self.consume(FPTYPE)
-			self.consume(COLON)
-			self.consume(LPAREN)
-			## check bater later here for expressions
-			n = self.intv_expr()
-			left = n.rec_eval(n)
-			lexpr = left[0].exprCond[0]
-			lexpr = lexpr if seng.count_ops(lexpr)==0 else self.intv_eval(lexpr, lower=True)
-			#left = self.current_token.value
-			#self.consume(FLOAT)
-			self.consume(COMMA)
-
-			n = self.intv_expr()
-			right = n.rec_eval(n)
-			rexpr = right[0].exprCond[0]
-			rexpr = rexpr if seng.count_ops(rexpr)==0 else self.intv_eval(rexpr)
-
-			#print("Interval:", lexpr, rexpr)
-			#self.consume(COMMA)
-			#right = self.current_token.value
-			#self.consume(FLOAT)
-			self.consume(RPAREN)
-
-			symVar = FreeVar(var_token, cond=Globals.__T__)
-			symVar.set_noise(symVar, (rexpr*pow(2,-53), 0.0))
-			symVar.set_rounding(fptype)
-			#self.current_symtab.insert(var_token.value, [[symVar,Globals.__T__]])
-			self.current_symtab.insert(var_token.value, ((symVar,Globals.__T__),)   )
-			Globals.inputVars[var_token.value] = {"INTV" : [lexpr, \
-															rexpr]}
+		print("Inside Program")
+		## Create symbolTable in the Global scope right here
+		self.create_new_scope(adjacency='serial')
+		##
+		self.parse_input()
+		self.parse_output()
+		self.parse_constraints()
+		self.parse_exec()
 
 	def parse(self, text):
 		self.lexer.create_token_generator(text)
@@ -557,9 +596,6 @@ class Sparser(object):
 		#print(self.current_symtab._symTab.keys())
 		#print(self.current_symtab._scope)
 		#print(self.current_symtab._scopeCond)
-
-
-
 
 if __name__ == "__main__":
 	
