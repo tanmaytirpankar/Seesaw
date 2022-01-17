@@ -675,7 +675,7 @@ class AnalyzeNode_Cond(object):
 			node.mutate_to_abstract(name, ID)
 
 			Globals.inputVars[name] = {"INTV" : res["INTV"]}
-			Globals.GS[0]._symTab[name] = ((node, Globals.__T__),)
+			Globals.global_symbol_table[0]._symTab[name] = ((node, Globals.__T__),)
 
 	def simplify_with_abstraction(self, sel_candidate_list, argList, MaxDepth, bound_min, bound_max):
 		Globals.condExprBank.clear()

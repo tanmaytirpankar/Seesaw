@@ -60,7 +60,7 @@ class Sparser(object):
 		Globals.depthTable[node.depth].add(node)
 
 	def CheckSymTable(self, node, token):
-		#symTable = Globals.GS[scopeID]
+		#symTable = Globals.global_symbol_table[scopeID]
 		lval = self.current_symtab.lookup(token.value)
 		if lval is None or len(lval)==0:
 			# TODO: What is this? Asserting the opposite of the if condition inside the if block. How will it ever trigger?
@@ -68,7 +68,7 @@ class Sparser(object):
 				print(token.value)
 				assert(token.value in Globals.inputVars.keys())
 			self.current_symtab._symTab[token.value] = ((node, Globals.__T__),)
-			#print("Check-tokens:", token, self.current_scope, lval, Globals.GS[0]._symTab.keys())
+			#print("Check-tokens:", token, self.current_scope, lval, Globals.global_symbol_table[0]._symTab.keys())
 			return node
 		elif (len(lval)==1):
 			return lval[0][0]
@@ -98,7 +98,7 @@ class Sparser(object):
 
 		self.scopeStack.append(item)
 		symTab = SymbolTable(Globals.scopeID, cond, _caller_)
-		Globals.GS[Globals.scopeID] = symTab
+		Globals.global_symbol_table[Globals.scopeID] = symTab
 
 		## update the current state
 		self.current_symtab = symTab
@@ -173,18 +173,18 @@ class Sparser(object):
 	def mergeSymTbale(self):
 		print("Stack:", self.scopeStack)
 		item = self.scopeStack.pop()
-		symTab = Globals.GS[item[0]]
+		symTab = Globals.global_symbol_table[item[0]]
 		if (len(item)>1):
 			assert(len(item)==2)
-			symTab = self.parallel_merge(Globals.GS[item[0]], Globals.GS[item[1]], scope=item[0])
+			symTab = self.parallel_merge(Globals.global_symbol_table[item[0]], Globals.global_symbol_table[item[1]], scope=item[0])
 		parent_scope_info = self.scopeStack.pop()
 		if(len(parent_scope_info)>1): # parent 'else' is the immediate pred
 			parent_item = parent_scope_info[1]
 		else:
 			parent_item = parent_scope_info[0]
 
-		serialSymTab = self.serial_merge(Globals.GS[parent_item], symTab, parent_item)
-		Globals.GS[parent_item] = serialSymTab
+		serialSymTab = self.serial_merge(Globals.global_symbol_table[parent_item], symTab, parent_item)
+		Globals.global_symbol_table[parent_item] = serialSymTab
 		self.current_scope = parent_item
 		self.current_symtab = serialSymTab
 		self.scopeStack.append(parent_scope_info)
@@ -562,7 +562,7 @@ class Sparser(object):
 		self.consume(SRPAREN)
 		## Do a final lifting of any remaining gateaways
 		assert(self.current_scope == 0)
-		assert(self.current_symtab == Globals.GS[0])
+		assert(self.current_symtab == Globals.global_symbol_table[0])
 		del self.current_symtab._symTab['_caller_']
 		for k,v in self.current_symtab._symTab.items():
 			if len(v) > 1 :
@@ -623,14 +623,14 @@ if __name__ == "__main__":
 #		#	print(k, v.token.lineno, v.rec_eval(v))
 #		
 #
-	for k,v in Globals.GS[0]._symTab.items():
+	for k,v in Globals.global_symbol_table[0]._symTab.items():
 		print(k, v)
 		for els in v:
 			(nd, cond) = els
 			for child in nd.nodeList:
 				print(child[0], child[1])
 
-	#rhs = Globals.GS[0]._symTab[seng.var('g')]
+	#rhs = Globals.global_symbol_table[0]._symTab[seng.var('g')]
 	#print(rhs[0][0], type(rhs[0][0]))
 	#print(rhs[0][0].rec_eval(rhs[0][0]))
 #

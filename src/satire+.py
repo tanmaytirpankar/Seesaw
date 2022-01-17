@@ -78,7 +78,7 @@ def rebuildAST():
 	print("\n  ********* Rebuilding AST post abstracttion ********\n")
 	logger.info("\n  ********* Rebuilding AST post abstracttion ********\n")
 	print("Synthesizing expression with fresh FreeVars .... ")
-	probeList = mod_probe_list(helper.getProbeList())
+	probeList = mod_probe_list([Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars])
 
 	completed = defaultdict(int)
 
@@ -123,7 +123,7 @@ def abstractNodes(results):
 		node.mutate_to_abstract(name, ID)
 
 		Globals.inputVars[name] = {"INTV" : res["INTV"]}
-		Globals.GS[0]._symTab[name] = ((node,Globals.__T__),)
+		Globals.global_symbol_table[0]._symTab[name] = ((node,Globals.__T__),)
 	
 
 def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False):
@@ -171,7 +171,7 @@ def full_analysis(probeList, argList, maxdepth):
 
 #def ErrorAnalysis(argList):
 #
-#	probeList = helper.getProbeList()
+#	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]()
 #	maxdepth = max([max([n[0].depth for n in nodeList])  for nodeList in probeList])
 #	print("maxdepth = ", maxdepth)
 #	probeList = [nodeList[0][0] for nodeList in probeList]
@@ -189,7 +189,7 @@ def full_analysis(probeList, argList, maxdepth):
 #	full_analysis(probeList, argList, maxdepth)
 
 def mod_probe_list(probeNodeList):
-	probeList = helper.getProbeList()
+	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
 	probeList = [nodeList[0][0] for nodeList in probeList]
 	return probeList
 	
@@ -202,9 +202,8 @@ def mod_probe_list(probeNodeList):
 	#		print(k.depth, dep.depth, dep.rec_eval(dep))
 	#print("From here:", [op.rec_eval(op) for op in opList])
 def ErrorAnalysis(argList):
-
-	absCount = 1
-	probeList = helper.getProbeList()
+	abstraction_level = 1
+	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
 	maxdepth = max([max([n[0].depth for n in nodeList])  for nodeList in probeList])
 	print("maxdepth = ", maxdepth)
 	logger.info("Full AST_DEPTH : {ast_depth}".format(ast_depth=maxdepth))
@@ -221,13 +220,13 @@ def ErrorAnalysis(argList):
 			print("Candidate List Length:", len(sel_candidate_list))
 			if ( len(sel_candidate_list) > 0):
 				print("-----------------------------------")
-				print("ABSTRACTION LEVEL = {abs_level}".format(abs_level=absCount))
+				print("ABSTRACTION LEVEL = {abs_level}".format(abs_level=abstraction_level))
 				logger.info("-----------------------------------")
-				logger.info("ABSTRACTION LEVEL = {abs_level}".format(abs_level=absCount))
-				absCount += 1
+				logger.info("ABSTRACTION LEVEL = {abs_level}".format(abs_level=abstraction_level))
+				abstraction_level += 1
 				results = simplify_with_abstraction(sel_candidate_list, argList, maxdepth)
 				maxopCount = results.get("maxOpCount", 1000)
-				probeList = mod_probe_list(helper.getProbeList())
+				probeList = mod_probe_list([Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars])
 				maxdepth = max([n.depth for n in probeList])
 				if (maxopCount > 1000 and maxdepth > 8 and bound_mindepth > 5):
 					bound_maxdepth = maxdepth if bound_maxdepth > maxdepth else bound_maxdepth - 2 if bound_maxdepth - bound_mindepth > 4 else bound_maxdepth
@@ -286,12 +285,12 @@ if __name__ == "__main__":
 
 
 
-	#print("Before:", Globals.GS[0]._symTab.keys())
+	#print("Before:", Globals.global_symbol_table[0]._symTab.keys())
 	#------ PreProcess to eliminate all redundant nodes ---------
 	pr1 = time.time()
 	#helper.PreProcessAST()
 	pr2 = time.time()
-	##print("\nAfter:", Globals.GS[0]._symTab.keys(),"\n\n")
+	##print("\nAfter:", Globals.global_symbol_table[0]._symTab.keys(),"\n\n")
 	#opList = helper.get_opList(DIV)
 	#D = helper.find_common_dependence(opList, 5, 40)
 	#for k,v in D.items():

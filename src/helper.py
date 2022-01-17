@@ -45,11 +45,6 @@ def rpInterface(rpConstraint, numVars, numBoxes):
 
 	return [returnValue, rp._handle]
 
-
-def getProbeList():
-	#print(Globals.GS[0]._symTab.keys())
-	return [Globals.GS[0]._symTab[outVar] for outVar in Globals.outVars]
-
 def freeCondSymbols(SymEl):
 	assert(type(SymEl).__name__ == "Sym")
 	cond = SymEl.exprCond[1]
@@ -147,7 +142,7 @@ def expression_builder(probeList, etype=False, ctype=False, inv=False):
 	if ctype:
 		return (free_syms, cond_syms)
 	else:
-		#for k,v in Globals.GS[0]._symTab.items():
+		#for k,v in Globals.global_symbol_table[0]._symTab.items():
 		#	print("\n*******Symbol Name:", k)
 		#	for vi in v:
 		#		print(vi[0].f_expression)
@@ -186,7 +181,7 @@ def PreProcessAST():
 	print("\n------------------------------")
 	print("PreProcessing Block:")
 
-	probeList = getProbeList()
+	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]()
 	reachable = defaultdict(set)
 
 
@@ -196,11 +191,11 @@ def PreProcessAST():
 		if not reachable[node.depth].__contains__(node):
 			pretraverse(node, reachable)
 
-	print("Symbol count Pre Processing :", len(Globals.GS[0]._symTab.keys()))
-	Globals.GS[0]._symTab = {syms: tuple(set(n for n in nodeCondList \
+	print("Symbol count Pre Processing :", len(Globals.global_symbol_table[0]._symTab.keys()))
+	Globals.global_symbol_table[0]._symTab = {syms: tuple(set(n for n in nodeCondList \
 										if reachable[n[0].depth].__contains__(n[0]))) \
-										for syms,nodeCondList in Globals.GS[0]._symTab.items() }
-	print("Symbol count Post Processing :", len(Globals.GS[0]._symTab.keys()))
+										for syms,nodeCondList in Globals.global_symbol_table[0]._symTab.items() }
+	print("Symbol count Post Processing :", len(Globals.global_symbol_table[0]._symTab.keys()))
 	prev_numNodes = sum([ len(Globals.depthTable[el]) for el in Globals.depthTable.keys() if el!=0] )
 	Globals.depthTable = reachable
 	curr_numNodes = sum([ len(Globals.depthTable[el]) for el in Globals.depthTable.keys() if el!=0] )
@@ -297,7 +292,7 @@ def parallel_merge(symTab1, symTab2, scope):
 
 def filterCandidate(bdmin, bdmax, dmax):
 	#workList =  [[v[0] for v in nodeList if v[0].depth!=0]\
-	#            for k,nodeList in Globals.GS[0]._symTab.items()]
+	#            for k,nodeList in Globals.global_symbol_table[0]._symTab.items()]
 	#workList =  [[v for v in nodeList if v.depth!=0]\
 	workList =  [[v for v in nodeList if v.depth!=0 and v.depth>=bdmin and v.depth<=bdmax]\
 	            for k,nodeList in Globals.depthTable.items()]
@@ -310,8 +305,8 @@ def filterCandidate(bdmin, bdmax, dmax):
 
 	#return list(filter( lambda x:x.depth >= bdmin and x.depth <= bdmax ,\
 	#							workList))
-							   #[[v for v in nodeList if v.depth!=0] for k,nodeList in Globals.GS[0]._symTab.items()]
-	                           #[v for k,v in Globals.GS[0]._symTab.items() if v.depth!=0]\
+							   #[[v for v in nodeList if v.depth!=0] for k,nodeList in Globals.global_symbol_table[0]._symTab.items()]
+	                           #[v for k,v in Globals.global_symbol_table[0]._symTab.items() if v.depth!=0]\
 							 #))
 
 def filterCandidate(bdmin, bdmax, dmax):
@@ -398,9 +393,9 @@ def writeToFile(results, fout, argList):
 	dumpStr = ''
 	for outVar in Globals.outVars:
 		#errIntv = results[Globals.lhstbl[outVar]]["ERR"]
-		num_ulp_maxError = results[Globals.GS[0]._symTab[outVar][0][0]]["ERR"]
-		num_ulp_SecondmaxError = results[Globals.GS[0]._symTab[outVar][0][0]]["SERR"]
-		funcIntv = results[Globals.GS[0]._symTab[outVar][0][0]]["INTV"]
+		num_ulp_maxError = results[Globals.global_symbol_table[0]._symTab[outVar][0][0]]["ERR"]
+		num_ulp_SecondmaxError = results[Globals.global_symbol_table[0]._symTab[outVar][0][0]]["SERR"]
+		funcIntv = results[Globals.global_symbol_table[0]._symTab[outVar][0][0]]["INTV"]
 
 		#num_ulp_maxError = max([abs(i) for i in errIntv])
 		maxError = num_ulp_maxError*pow(2, -53)
@@ -408,7 +403,7 @@ def writeToFile(results, fout, argList):
 		print("FuncIntv:", funcIntv)
 		outIntv = [funcIntv[0]-maxError-SecondmaxError, funcIntv[1]+maxError+SecondmaxError]
 		abserror = (maxError + SecondmaxError)
-		instability = results[Globals.GS[0]._symTab[outVar][0][0]]["INSTABILITY"] if argList.report_instability else "UNDEF"
+		instability = results[Globals.global_symbol_table[0]._symTab[outVar][0][0]]["INSTABILITY"] if argList.report_instability else "UNDEF"
 
 		#print("//-------------------------------------")
 		#print("Ouput Variable -> ", outVar)

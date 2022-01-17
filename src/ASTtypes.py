@@ -329,7 +329,7 @@ class Var(AST):
 			An object of class SymTup containing the value as parsed by the parser and True boolean value for the
 			conditional node.
 		"""
-		nodeList = Globals.GS[0]._symTab.get(obj.token.value, None)
+		nodeList = Globals.global_symbol_table[0]._symTab.get(obj.token.value, None)
 		if nodeList is None or len(nodeList)==0:
 			return SymTup((Sym(obj.token.value, Globals.__T__),))
 		else:

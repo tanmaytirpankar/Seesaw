@@ -33,9 +33,9 @@ inputVars = {eps : {"INTV" : [pow(2,53), pow(2,53)], "EPS": [0.0, 0.0]}}
 outVars = []
 
 ## SymbolTable Hierarchy Tracker
-## GS[LEVEL-ID] = { T : SymtabObject,
+## global_symbol_table[LEVEL-ID] = { T : SymtabObject,
 ##                  F : SymtabObject }
-GS = dict()
+global_symbol_table = dict()
 
 
 ## Record of nodes at each depth
