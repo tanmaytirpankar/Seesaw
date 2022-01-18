@@ -1,4 +1,4 @@
-
+# --file ../Benchmarks/miniCG/SAT/miniCG_commented.txt --gverbose --mindepth 10 --maxdepth 20 --enable-abstraction
 INPUTS {
     b1 fl64 :(0.98,1.0);
     b2 fl64 :(1.98,2.0);

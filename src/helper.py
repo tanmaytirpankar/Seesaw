@@ -69,15 +69,17 @@ def parse_cond(cond):
 		return tcond
 	return tcond
 
-
+# Builds expression for each node in the "node" subtree of the AST.
 def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, cond, etype, ctype, inv=False):
 
+	# Recursive call to build expressions for the subtrees of "node"
 	for child in node.children:
 		if not reachable[child.depth].__contains__(child):
 			(free_syms, cond_syms) = dfs_expression_builder(child, reachable, parent_dict, free_syms, cond_syms, cond, etype, ctype, inv)
 
 		parent_dict[child].append(node)
 
+	# Expression building for ExprComp nodes
 	if type(node).__name__ == "ExprComp":
 		print("ExprComp line:", node.token.lineno)
 		if etype:
@@ -91,6 +93,7 @@ def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, c
 		else:
 			(fexpr,fsyms) = node.mod_eval(node, inv, 0.0, 0.0)
 		free_syms = free_syms.union(fsyms)
+	# Expression building for nodes other than ExprComp nodes
 	else:
 		fexpr = node.eval(node, inv)
 
@@ -115,7 +118,7 @@ def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, c
 	#reachable[node.depth].add(node)
 
 
-
+#
 def expression_builder(probeList, etype=False, ctype=False, inv=False):
 
 	parent_dict = defaultdict(list)
@@ -124,6 +127,7 @@ def expression_builder(probeList, etype=False, ctype=False, inv=False):
 	cond_syms = set()
 	print("Begin enter")
 
+	# For each node, build the complete expression
 	for node in probeList:
 		if not reachable[node.depth].__contains__(node):
 			print(node.depth)
@@ -181,7 +185,7 @@ def PreProcessAST():
 	print("\n------------------------------")
 	print("PreProcessing Block:")
 
-	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]()
+	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
 	reachable = defaultdict(set)
 
 
@@ -206,32 +210,32 @@ def PreProcessAST():
 	
 	print("------------------------------\n")
 
-
+# Creates a flattened set of children of node that lie between mind and maxd
 def get_child_dependence(node, mind, maxd):
-	
-	dependence = set()
 	if len(node.children) > 0 and node.depth > mind and node.depth <= maxd:
 		print("DD:", node.depth)
-		find_all_dependence = [get_child_dependence(child, mind, maxd) for child in node.children]
-		dependence = dependence.union(reduce(lambda x,y: x.union(y), find_all_dependence, set()))
-		dependence.add(node)
+		dependence = set([get_child_dependence(child, mind, maxd) for child in node.children])
 
 	#return dependence.difference(common_dependence(node, mind, maxd))
 	return dependence
 
-
+# TODO: Might be wrong. Problem 1: Since find_all_dependence is a list, we cannot apply intersection on its elements.
+# TODO: Problem 2: It is created from sets so elements unique and so an intersection operation will always be empty.
+# Returns a subset of children of "node" that are depended on by multiple children.
 def common_dependence(node, mind, maxd):
 	find_all_dependence = [get_child_dependence(child, mind, maxd) for child in node.children]
+	if node not in find_all_dependence:
+		find_all_dependence.append(node)
 	#print(type(node), [child.rec_eval(child) for child in node.children])
 	#print([child for child in node.children])
 	#print(find_all_dependence)
 	if(len(find_all_dependence)!=0):
-		common_subset = reduce(lambda x,y: x.intersection(y), find_all_dependence, find_all_dependence[0] )
+		common_subset = reduce(lambda x,y: x.intersection(y), find_all_dependence, find_all_dependence[0])
 	else:
 		common_subset = set()
 	return common_subset
 
-
+# Returns a dictionary of common dependencies among children for each node in nodeList
 def find_common_dependence( nodeList, mind, maxd ):
 	
 	common_subset = dict()
@@ -245,7 +249,8 @@ def find_common_dependence( nodeList, mind, maxd ):
 
 	return common_subset
 
-
+# Creates a set of all nodes within depth maxd from all nodes in depthTable and from it filters nodes with token type
+# optype. The filtered set is returned.
 def get_opList(optype, maxd):
 	allNodes = reduce(lambda x,y: x.union(y), [set(nodesList) for k,nodesList in Globals.depthTable.items() if k!=0 and k <= maxd], set())
 	opList = set(filter(lambda x: x.token.type==optype, allNodes))
@@ -289,25 +294,25 @@ def parallel_merge(symTab1, symTab2, scope):
 
 	return newtab
 
+# def filterCandidate(bdmin, bdmax, dmax):
+# 	#workList =  [[v[0] for v in node_set if v[0].depth!=0]\
+# 	#            for k,node_set in Globals.global_symbol_table[0]._symTab.items()]
+# 	#workList =  [[v for v in node_set if v.depth!=0]\
+# 	workList =  [[v for v in node_set if v.depth!=0 and v.depth>=bdmin and v.depth<=bdmax]\
+# 	            for k,node_set in Globals.depthTable.items()]
+#
+# 	workList = list(set(reduce(lambda x,y : x+y, workList, [])))
+# 	#print("workList=",len(workList), [v.depth for v in workList])
+# 	#print(bdmin, bdmax)
+#
+# 	return workList
+#
+# 	#return list(filter( lambda x:x.depth >= bdmin and x.depth <= bdmax ,\
+# 	#							workList))
+# 							   #[[v for v in node_set if v.depth!=0] for k,node_set in Globals.global_symbol_table[0]._symTab.items()]
+# 	                           #[v for k,v in Globals.global_symbol_table[0]._symTab.items() if v.depth!=0]\
+# 							 #))
 
-def filterCandidate(bdmin, bdmax, dmax):
-	#workList =  [[v[0] for v in nodeList if v[0].depth!=0]\
-	#            for k,nodeList in Globals.global_symbol_table[0]._symTab.items()]
-	#workList =  [[v for v in nodeList if v.depth!=0]\
-	workList =  [[v for v in nodeList if v.depth!=0 and v.depth>=bdmin and v.depth<=bdmax]\
-	            for k,nodeList in Globals.depthTable.items()]
-	
-	workList = list(set(reduce(lambda x,y : x+y, workList, [])))
-	#print("workList=",len(workList), [v.depth for v in workList])
-	#print(bdmin, bdmax)
-	
-	return workList
-
-	#return list(filter( lambda x:x.depth >= bdmin and x.depth <= bdmax ,\
-	#							workList))
-							   #[[v for v in nodeList if v.depth!=0] for k,nodeList in Globals.global_symbol_table[0]._symTab.items()]
-	                           #[v for k,v in Globals.global_symbol_table[0]._symTab.items() if v.depth!=0]\
-							 #))
 
 def filterCandidate(bdmin, bdmax, dmax):
 	
@@ -338,7 +343,7 @@ def filterCandidate(bdmin, bdmax, dmax):
 	print("Final WorkList!", workList)
 	return workList
 
-
+# TODO: Description
 def selectCandidateNodes(maxdepth, bound_mindepth, bound_maxdepth):
 	
 	PreCandidateList = filterCandidate(bound_mindepth, bound_maxdepth, maxdepth)

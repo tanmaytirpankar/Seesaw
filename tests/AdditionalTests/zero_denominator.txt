@@ -1,9 +1,11 @@
+# --file ../tests/AdditionalTests/zero_denominator.txt --gverbose --mindepth 10 --maxdepth 20 --enable-abstraction
 INPUTS	{ a fl64 :(-1.0, 2.0) ;
 	  b fl64 :(-1.0, 1.0) ;
 	  c fl64 :(-1.0, 1.0) ;
 	}
 
-OUTPUTS { r ; }
+OUTPUTS { r ;
+            c; }
 
 REQUIRES {
 	c: (c > 0.1);

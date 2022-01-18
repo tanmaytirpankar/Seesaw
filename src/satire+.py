@@ -126,6 +126,7 @@ def abstractNodes(results):
 		Globals.global_symbol_table[0]._symTab[name] = ((node,Globals.__T__),)
 	
 
+# Performs error anaylsis on the candidates and returns "result" dictionary. The candidates could be abstracted nodes.
 def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False):
 
 	Globals.condExprBank.clear()
@@ -146,15 +147,9 @@ def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False
 	abstractNodes(results)
 	rebuildAST()
 
-	
-
-
 	return dict()
 
-
-
-
-
+# Performs error analysis on nodes in the probeList and returns the "result" dictionary
 def full_analysis(probeList, argList, maxdepth):
 	#helper.expression_builder(probeList)
 	#for k,v in Globals.predTable.items():
@@ -203,10 +198,16 @@ def mod_probe_list(probeNodeList):
 	#print("From here:", [op.rec_eval(op) for op in opList])
 def ErrorAnalysis(argList):
 	abstraction_level = 1
+	# TODO: probeList -> output_variable_predicated_nodes_list
+	# A list of tuple of conditional nodes corresponding to the outputs needed.
+	# Note: Variables may have more than one conditional nodes associated.
 	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
-	maxdepth = max([max([n[0].depth for n in nodeList])  for nodeList in probeList])
+	# TODO: maxdepth -> max_depth
+	maxdepth = max([max([n[0].depth for n in nodeList]) for nodeList in probeList])
 	print("maxdepth = ", maxdepth)
 	logger.info("Full AST_DEPTH : {ast_depth}".format(ast_depth=maxdepth))
+
+	# TODO: Resolve the probeList name and call this something else. Same name used for two different purposes.
 	probeList = [nodeList[0][0] for nodeList in probeList]
 	bound_mindepth, bound_maxdepth = argList.mindepth, argList.maxdepth
 
