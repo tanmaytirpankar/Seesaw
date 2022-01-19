@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 
 ##-- Description of the data structures involved
 ##-- workList, next_workList -> workList for the BFS traversal
-##-- parentTracker 		 -> node -> parent information post trimming
-##-- completed1			 -> completed list for bfs traversal
+##-- parentTracker 		 -> node -> parent information post trimming (number of parents)
+##-- completed1			 -> completed list for bfs traversal (Keeps track of nodes whose backward derivatives have been calculated for each depth)
 ##-- completed2			 -> reachable list for dfs traversal (keeping both for consistency check)
-##-- bwdDeriv			 -> Dictionary with derivative information
+##-- bwdDeriv			 -> Dictionary with derivative information (Contains dictionaries of derivates of expression corresponding to the node in the outer dictionary with respect to node in inner dictionary)
 ##-- externConstraints   -> Constraints from "REQUIRES" pragmas
 ##-- externFreeSymbols   -> Free symbols used in external constraints
 ##-- results 			 -> dictionary of results to be returned
@@ -74,6 +74,7 @@ class AnalyzeNode_Cond(object):
 		#print("ROOT EXPRESSION SIZE:", [node.f_expression.__countops__() for node in probeNodeList])
 		#print("Expression builder condsyms:", self.cond_syms)
 
+	#
 	def __setup_condexpr__(self):
 		print("__setup_condexpr__", self.cond_syms)
 		for csym in self.cond_syms:
@@ -90,19 +91,24 @@ class AnalyzeNode_Cond(object):
 			Globals.condExprBank[~csym] = Globals.condExprBank.get(~csym) if ~csym in Globals.condExprBank.keys()\
 			else helper.handleConditionals([symNode], etype=not Globals.argList.stable, inv=True)
 
-
+	# Sets partial derivative of node with respect to itself equal to one for each node in trimList and records number
+	# of parents.
 	def __setup_outputs__(self):
 		for node in self.trimList:
 			self.bwdDeriv[node] = {node: SymTup((Sym(1,Globals.__T__), ))}
 			self.parentTracker[node] = len(self.parent_dict[node])
 
+	# Initializes workList for derivative calculation and error analysis
 	def __init_workStack__(self):
 		max_depth = max(list(map(lambda x: x.depth, self.trimList))) 
 		#print(max_depth)
+		# Partition trimList into next_workList (nodes with depth!=max_depth) and workList (nodes with depth==max_depth)
 		it1, it2 = utils.partition(self.trimList, lambda x:x.depth==max_depth)
 		self.next_workList = list(it1)
 		self.workList = list(it2)
 
+	# Processes external constraints:
+	# Generates conditional string, records any free_symbols.
 	def __externConstraints__(self):
 		(subcond,free_symbols,cond_symbols) = helper.handleConditionals( [v for k,v in Globals.externPredTable.items()], etype=False)
 		self.externConstraints = subcond 
@@ -118,7 +124,8 @@ class AnalyzeNode_Cond(object):
 
 
 
-
+	# Calculates the backward derivative of node
+	#
 	def visit_node_deriv(self, node):
 		st = time.time()
 		outList = self.bwdDeriv[node].keys()
@@ -160,7 +167,9 @@ class AnalyzeNode_Cond(object):
 		#print("Time taken =", et-st,"\n\n")
 
 
-
+	# For each node in the workList, calculates the backward derivative for the children with respect to this node.
+	# Partitions the next_workList into workList and next_workList using the next_depth.
+	# Eventually backward derivatives of all nodes have been calculated with respect to the trimList nodes.
 	def traverse_ast(self):
 		next_workList = []
 		curr_depth = 0
@@ -173,6 +182,7 @@ class AnalyzeNode_Cond(object):
 				self.completed1[node.depth].add(node)
 			elif self.completed1[node.depth].__contains__(node):
 				pass
+			# TODO: Understand the converge_parents function and why it is needed.
 			elif (self.converge_parents(node)):
 				self.visit_node_deriv(node)
 			else:
@@ -331,7 +341,8 @@ class AnalyzeNode_Cond(object):
 			self.propagate_symbolic(node)
 		self.completed2[node.depth].add(node)
 
-
+	# Adds all Symbol tuples in tupleList
+	# TODO: Study this method
 	def condmerge(self, tupleList):
 		ld = {}
 		for els in tupleList:
@@ -542,7 +553,7 @@ class AnalyzeNode_Cond(object):
 		return [Intv, res_avg_maxres]
 
 
-
+	# Calculates the first order error from the backward derivatives, error expressions and input intervals
 	def first_order_error(self):
 
 		for node in self.trimList:
@@ -677,6 +688,7 @@ class AnalyzeNode_Cond(object):
 			Globals.inputVars[name] = {"INTV" : res["INTV"]}
 			Globals.global_symbol_table[0]._symTab[name] = ((node, Globals.__T__),)
 
+	# TODO: There is another simplify_with_abstraction method in satire+.py. Check if one of these can be eliminated.
 	def simplify_with_abstraction(self, sel_candidate_list, argList, MaxDepth, bound_min, bound_max):
 		Globals.condExprBank.clear()
 		obj = AnalyzeNode_Cond(sel_candidate_list, self.argList, MaxDepth, paving=Globals.argList.realpaver)
@@ -719,13 +731,14 @@ class AnalyzeNode_Cond(object):
 		return self.results
 
 
-
+	# Build derivatives and find errors.
 	#def start(self, bound_min=Globals.argList.mindepth, bound_max=Globals.argList.maxdepth ):
 	def start(self, bound_min=10, bound_max=20 ):
 	
 		MaxDepth = max([node.depth for node in self.trimList])
-
 		print("MAXDEPTH1:{MaxDepth}".format(MaxDepth=MaxDepth))
+
+		# If depth of AST exceeds bound_max, default 20, perform abstraction to get the depth within the window.
 		while (MaxDepth >= bound_min and MaxDepth >= bound_max):
 			#MaxOps = max([node.f_expression.__countops__() for node in self.trimList])
 			print("MAXDEPTH2:{MaxDepth}".format(MaxDepth=MaxDepth))
@@ -733,6 +746,7 @@ class AnalyzeNode_Cond(object):
 		print("out of while")
 		if MaxDepth==0 :
 			return self.default_res()
+		# TODO: Expressions have been built on AnalyzeCond initialization. Why build multiple times? Is trimList different from probeList?
 		(self.parent_dict, self.cond_syms) = helper.expression_builder(self.trimList)
 		self.__setup_condexpr__()
 		self.__init_workStack__()
@@ -753,6 +767,7 @@ class AnalyzeNode_Cond(object):
 		#print("//----------------------------//")
 		print(" > Analyzing error for the current abstraction block...\n")
 		logger.info("Analyzing error for the current abstraction block...\n")
+		# Calculation of first_order_error using the collected data - backward derivatives, symbolic error experssions, inputs
 		res = self.first_order_error() 
 		fe2 = time.time()
 		print(" > Finished in {duration} secs\n".format(duration=fe2-fe1))

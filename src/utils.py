@@ -445,7 +445,7 @@ def isConst(obj):
 		#except:
 		#	return False
 
-
+# Partitions "items" into two lists. One that satisfied "predicate" and the other that does not.
 def partition(items, predicate):
 	a, b = tee((predicate(item), item) for item in items)
 	return ((item for pred, item in a if not pred), (item for pred, item in b if pred))

@@ -99,13 +99,13 @@ def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, c
 
 	node.set_expression(fexpr)
 	#print("FEXPRESSION TYPE = ", type(node.f_expression).__name__)
+	# TODO: Figure out what this if block is for by using printing csymSet.
 	if type(node.f_expression).__name__ == "SymTup":
 		csymSet = reduce(lambda x,y: x.union(y), \
 						[el.exprCond[1].free_symbols for el in node.f_expression if el.exprCond[1] not in (True,False)], \
 						set())
 		cond_syms = cond_syms.union(csymSet)
 	reachable[node.depth].add(node)
-
 	return (free_syms, cond_syms)
 
 
@@ -118,7 +118,7 @@ def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, c
 	#reachable[node.depth].add(node)
 
 
-#
+# Builds expressions for all nodes in probeList and returns?
 def expression_builder(probeList, etype=False, ctype=False, inv=False):
 
 	parent_dict = defaultdict(list)
@@ -127,7 +127,8 @@ def expression_builder(probeList, etype=False, ctype=False, inv=False):
 	cond_syms = set()
 	print("Begin enter")
 
-	# For each node, build the complete expression
+	# For each node, build the complete expression within the node itself and return free_syms and cond_syms
+	# TODO: What are free_syms and cond_syms?
 	for node in probeList:
 		if not reachable[node.depth].__contains__(node):
 			print(node.depth)
@@ -152,6 +153,8 @@ def expression_builder(probeList, etype=False, ctype=False, inv=False):
 		#		print(vi[0].f_expression)
 		return (parent_dict, cond_syms)
 
+# TODO: Give a neutral name to probeNodeList parameter.
+# Builds a conditional string from all nodes in probeNodeList.
 #etype = to analyze error within the conditional expressions
 #ctype = free_syms + cond_syms ( specifically used when handling conditonals to retrieve conditional symbols )
 # inv  = To generate delta inverse that includes the grey-zone
@@ -159,6 +162,8 @@ def handleConditionals(probeNodeList, etype=True, inv=False):
 	print("Building conditional expressions...\n")
 	logger.info("Building conditional expressions...\n")
 	(fsyms, csyms) = expression_builder(probeNodeList, etype, ctype=True, inv=inv)
+
+	# Builds a
 	cstr = " & ".join([str(probeNode.f_expression) for probeNode in probeNodeList])
 	print("Debug-check:", (cstr,fsyms, csyms))
 	#return (" & ".join([str(probeNode.f_expression) for probeNode in probeNodeList]),fsyms, csyms)

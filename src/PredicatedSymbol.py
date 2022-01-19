@@ -11,6 +11,8 @@ from collections.abc import Iterable
 
 opLimit = 0
 
+# A Class representing Predicated Symbols. Contains the expression and the associated predicated with operations defined
+# for Predicated symbols.
 class PredSymbol(object):
 
 	__slots__ = ['exprCond']
