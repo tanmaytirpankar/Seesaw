@@ -1,4 +1,33 @@
 # --file ../Benchmarks/miniCG/SAT/miniCG_commented.txt --gverbose --mindepth 10 --maxdepth 20 --enable-abstraction
+
+# Calculation:
+# A is a 2*2 Matrix
+# b is a 2*1 matrix
+# v is a 2*1 matrix
+# r = b - A*v    # 2*1 matrix
+# d = r          # 2*1 matrix
+
+# Loop iteration 1
+# q = A*d
+# alpha = r.r/d.q   # single number
+# v_right = alpha * d   # 2*1 matrix
+# v = v + v_right   # 2*1 matrix
+# r_right = alpha*q # 2*1 matrix
+# r_new = r - r_right   # 2*1 matrix
+# beta = r_new.r_new/r.r   # single number
+# d_right = beta*d  # 2*1 matrix
+# d = r_new+d_right # 2*1 matrix
+# r = r_new # 2*1 matrix
+
+# Loop iteration 2
+# q = A*d
+# alpha = r.r/d.q   # single number
+# v_right = alpha * d   # 2*1 matrix
+# v = v + v_right   # 2*1 matrix
+# r_right = alpha*q # 2*1 matrix
+# r_new = r - r_right   # 2*1 matrix
+# norm_error = r_new.r_new
+
 INPUTS {
     b1 fl64 :(0.98,1.0);
     b2 fl64 :(1.98,2.0);

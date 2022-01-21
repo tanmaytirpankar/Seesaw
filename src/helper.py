@@ -217,9 +217,12 @@ def PreProcessAST():
 
 # Creates a flattened set of children of node that lie between mind and maxd
 def get_child_dependence(node, mind, maxd):
+	dependence = set()
+
 	if len(node.children) > 0 and node.depth > mind and node.depth <= maxd:
 		print("DD:", node.depth)
-		dependence = set([get_child_dependence(child, mind, maxd) for child in node.children])
+		for child in node.children:
+			dependence = dependence.union(get_child_dependence(child, mind, maxd))
 
 	#return dependence.difference(common_dependence(node, mind, maxd))
 	return dependence
@@ -230,7 +233,7 @@ def get_child_dependence(node, mind, maxd):
 def common_dependence(node, mind, maxd):
 	find_all_dependence = [get_child_dependence(child, mind, maxd) for child in node.children]
 	if node not in find_all_dependence:
-		find_all_dependence.append(node)
+		find_all_dependence.append({node})
 	#print(type(node), [child.rec_eval(child) for child in node.children])
 	#print([child for child in node.children])
 	#print(find_all_dependence)

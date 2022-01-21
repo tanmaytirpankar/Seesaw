@@ -11,5 +11,5 @@ REQUIRES {
 }
 
 EXPRS {
-	r rnd64 = a+c ;
+	r rnd64 = (a+b)/c ;
 }
