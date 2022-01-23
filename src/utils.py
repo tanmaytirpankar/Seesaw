@@ -114,7 +114,7 @@ def process_conditionals( innerConds, externConds ):
 
 	return str_cond_expr
 
-
+# Processes command string to invoke gelpia and returns the result.
 def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func-> Dur:"):
 	#try:
 	#    const_intv = float(str(symExpr))
@@ -181,6 +181,7 @@ def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func->
 
 	if Globals.enable_constr:
 		gstr_expr = inputStr + str_constraint +"; " + str_expr
+		print(gstr_expr)
 	#fout.write(str_expr)
 	##-- print(gstr_expr)
 

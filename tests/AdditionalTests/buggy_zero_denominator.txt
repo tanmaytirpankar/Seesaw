@@ -1,15 +1,20 @@
 # --file ../tests/AdditionalTests/zero_denominator.txt --gverbose --mindepth 10 --maxdepth 20 --enable-abstraction --enable-constr -useZ3
+# The output when you run it in terminal with gelpia is
+# Maximum lower bound 29.973740939300548
+# Maximum upper bound 30.117647058823533
+# Solver calls 20222
 
 INPUTS	{ a fl64 :(-1.0, 2.0) ;
 	  b fl64 :(-1.0, 1.0) ;
+	  c fl64 :(-1.0, 1.0) ;
 	}
 
 OUTPUTS { r ; }
 
 REQUIRES {
-	b: (b > 0.1);
+	c: (c > 0.1);
 }
 
 EXPRS {
-	r rnd64 = a/b ;
+	r rnd64 = (a+b)/c ;
 }
