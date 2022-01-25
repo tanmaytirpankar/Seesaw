@@ -553,7 +553,8 @@ class AnalyzeNode_Cond(object):
 		return [Intv, res_avg_maxres]
 
 
-	# Calculates the first order error from the backward derivatives, error expressions and input intervals
+	# Calculates the first order error from the backward derivatives and error expressions stored for each node and
+	# input intervals
 	def first_order_error(self):
 
 		for node in self.trimList:

@@ -1,7 +1,6 @@
 import Globals 
 
 import sympy as sym
-import symengine as seng
 import ops_def as ops
 
 from gtokens import *
@@ -14,6 +13,16 @@ import numpy as np
 class CToken(object):
 	"""
 	Representation of a single token.
+
+	Attributes
+	----------
+	type : string
+		Represents the type of token.
+	value : None
+	lineno : int
+		Never used.
+	derived_token : string
+		Representing numerical type using token values
 	"""
 	__slots__ = ('type', 'value', 'lineno', 'derived_token')
 	def __init__(self, tp, value):
@@ -69,7 +78,7 @@ class AST(object):
 		self.f_expression = None
 		self.children = ()
 		self.parents = ()
-		self.noise = (0,0)
+		self.noise = (0, 0)
 		self.rnd = 1.0
 		self.cond = cond
 		self.nodeList = []
@@ -95,12 +104,17 @@ class AST(object):
 	def set_expression(self, fexpr):
 		"""
 		Sets the f_expression class attribute.
+
 		Parameters
 		----------
 		fexpr : string
 			The expression represented by the node.
 		"""
-		self.f_expression = fexpr
+		if isinstance(fexpr, SymTup) or isinstance(fexpr, str):
+			self.f_expression = fexpr
+		else:
+			print("fexpression is not of type SymTup")
+			exit(1)
 
 	def eval(self, inv=False):
 		"""
@@ -180,7 +194,7 @@ class Num(AST):
 		return repr_str
 
 	@staticmethod
-	def eval(self, inv=False):
+	def eval(obj, inv=False):
 		# TODO: Find what inv is?
 		"""
 		Returns the numerical value stored by the token.
@@ -193,10 +207,20 @@ class Num(AST):
 			An object of class SymTup containing the value as parsed by the parser and True boolean value for the
 			conditional node.
 		"""
-		return  SymTup((Sym(self.token.value, Globals.__T__),))
+		return  SymTup((Sym(obj.token.value, Globals.__T__),))
 
 	@staticmethod
 	def get_noise(obj):
+		"""
+		# TODO: High Precision and Low Precision numbers here are fixed to be double and single precision. Need change?
+		Calculates the error in the number using the difference between a high and low precision value.
+		Parameters
+		----------
+		obj : node type
+		Returns
+		-------
+		Nothing
+		"""
 		#return abs(float(BigFloat(obj.token.value,context=single_precision) - BigFloat(obj.token.value,context=double_precision)))
 		return np.float64(obj.token.value) - np.float32(obj.token.value)
 		#return obj.token.value*pow(2,-53)
@@ -209,7 +233,7 @@ class Num(AST):
 ##-- FreeVariable
 class FreeVar(AST):
 	"""
-	The FreeVar node: Derived from AST representing abstracted nodes.
+	The FreeVar node: Derived from AST representing the input variables in the section INPUTS.
 	Attributes
 	----------
 	token : Lexer Token object
@@ -232,7 +256,7 @@ class FreeVar(AST):
 		return repr_str
 
 	@staticmethod
-	def eval(self, round_mode="fl64", inv=False):
+	def eval(obj, round_mode="fl64", inv=False):
 		"""
 		Sets rounding and returns the interval node or a new symengine variable.
 		Parameters
@@ -246,41 +270,59 @@ class FreeVar(AST):
 		seng.var(name) : symengine variable
 			Symengine variable called 'name'
 		"""
-		name = str(self.token.value)
-		self.depth = 0
-		intv = Globals.inputVars.get(self.token.value, None)
+		name = str(obj.token.value)
+		obj.depth = 0
+		intv = Globals.inputVars.get(obj.token.value, None)
 		print(intv)
 		if intv is not None and intv["INTV"] is None:
 			return SymTup((Sym(0.0, Globals.__F__),))
 		elif intv is not None and (intv["INTV"][0]==intv["INTV"][1]):
 			return SymTup((Sym( intv["INTV"][0], Globals.__T__),))
 		else:
-			return SymTup((Sym(self.token.value, Globals.__T__),))
+			return SymTup((Sym(obj.token.value, Globals.__T__),))
 
-	
-	#@staticmethod
-	#def get_noise(obj):
-	#	return 0.0
 
 	@staticmethod
 	def set_noise(obj, value):
+		"""
+		# TODO: Check whether the description is correct
+		Sets the noise (error) on the free variable.
+		Parameters
+		----------
+		obj : node type
+		value : tuple of two numbers (can be integer or float)
+			New noise value
+		Returns
+		-------
+		Nothing
+		"""
 		obj.noise = value
 
 	@staticmethod
 	def get_noise(obj):
+		"""
+		Gets the first value in the noise tuple.
+		Parameters
+		----------
+		obj : node type
+		Returns
+		-------
+		Nothing
+		"""
 		return abs(obj.noise[0])
 
 
 	def mutate_to_abstract(self, tvalue, tid):
 		"""
-		Sets the type and value of this node as it is a FreeVariable and so is not parsed from any file.
+		Modify this nodes data to denote this node is being abstracted. Sets the value of the token associated with this
+		node to some other value (Strictly a symbolic variable?) and changes the the token type.
 		Parameters
 		----------
 		tvalue : Symengine variable
 		tid : string
 		"""
 		self.token.value = tvalue #SymTup((Sym(tvalue, Globals.__T__), ))
-		self.token.type = tid ;
+		self.token.type = tid
 
 
 
@@ -295,6 +337,7 @@ class Var(AST):
 	Attributes
 	----------
 	token : Lexer Token object
+	cond : predicate value of this predicated node
 	"""
 	__slots__ = ['token']
 	def __init__(self, token, cond=Globals.__T__):
@@ -315,7 +358,7 @@ class Var(AST):
 	@staticmethod
 	def eval(obj, round_mode="fl64", inv=False):
 		"""
-		# TODO: Find what inv is?
+		# TODO: Find what inv is.
 		Sets rounding and returns the expression at the node.
 		Parameters
 		----------
@@ -339,16 +382,6 @@ class Var(AST):
 			f = lambda x, y: SymConcat(x,y)
 			return reduce(f, clist, SymTup((Sym(0.0,Globals.__T__),)))
 			#return SymTup( n[0].f_expression.__and__(n[1])  for n in nodeList  )
-			
-			
-			
-
-
-
-
-
-
-
 
 
 ##-- Creates a lifted node taking a list of (node, conds)
@@ -358,7 +391,7 @@ class LiftOp(AST):
 		super().__init__()
 		self.token = CToken('IF', value=None)
 #		self.token.type = IF
-		self.depth = max([n[0].depth for n in nodeList]) +1
+		self.depth = max([n[0].depth for n in nodeList]) + 1
 		self.nodeList = nodeList
 		self.children = [n[0] for n in nodeList]
 		self.derived_token = FLOAT if FLOAT in [n.derived_token for n in self.children] else INTEGER
@@ -388,16 +421,6 @@ class LiftOp(AST):
 	@staticmethod
 	def get_noise(obj):
 		return 0.0
-
-
-
-
-
-
-
-
-
-
 
 ##-- Transcendental and special ops
 class TransOp(AST):

@@ -1,6 +1,3 @@
-
-
-from gtokens import *
 from lexer import Slex
 from ASTtypes import *
 from collections import deque
@@ -9,11 +6,9 @@ from SymbolTable import *
 import sys
 import helper
 
-#import globals
 import Globals
 import time
 
-import copy
 from sympy.plotting.intervalmath import interval
 
 
@@ -86,7 +81,7 @@ class Sparser(object):
 
 	def create_new_scope(self, adjacency='serial', cond=Globals.__T__):
 		Globals.scopeID += 1
-		print("Scope creattion: ID = ", Globals.scopeID)
+		print("Scope creation: ID = ", Globals.scopeID)
 		#item = None if len(self.scopeStack)<=0 else self.scopeStack.pop()
 		if(adjacency == 'parallel'):
 			_caller_ = self.current_symtab._symTab['_caller_']
@@ -261,7 +256,7 @@ class Sparser(object):
 			self.consume(FPTYPE)
 			self.consume(COLON)
 			self.consume(LPAREN)
-			## check bater later here for expressions
+			## check later here for expressions
 			n = self.intv_expr()
 			left = n.rec_eval(n)
 			lexpr = left[0].exprCond[0]
@@ -447,7 +442,7 @@ class Sparser(object):
 			self.consume(RPAREN)
 			self.addDepthInfo(node)
 			return node
-		else :
+		else:
 			node = Var(token)
 			self.consume(ID)
 			if(token.value == seng.var('px4')):
