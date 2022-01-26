@@ -27,9 +27,17 @@ import numbers
 #		 }
 
 def bothNotConst(a,b):
+	"""
+	Checks if both operands are some number type (int or float)
+
+	Parameters
+	----------
+	a : any
+	b : any
+	"""
 	try:
-		d1 = float(a)
-		d2 = float(b)
+		float(a)
+		float(b)
 		return False
 	except:
 		pass

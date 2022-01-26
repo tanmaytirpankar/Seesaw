@@ -171,7 +171,7 @@ class Num(AST):
 	The Num node: Derived from AST representing numerical value holding nodes.
 	Attributes
 	----------
-	token : Lexer Token object
+	token : Lexer token object (INTEGER, FLOAT tokens)
 	"""
 	__slots__ = ['token']
 
@@ -198,10 +198,12 @@ class Num(AST):
 		# TODO: Find what inv is?
 		"""
 		Returns the numerical value stored by the token.
+
 		Parameters
 		----------
 		inv : ?
-			Returns
+
+		Returns
 		-------
 		SymTup : Object
 			An object of class SymTup containing the value as parsed by the parser and True boolean value for the
@@ -236,7 +238,7 @@ class FreeVar(AST):
 	The FreeVar node: Derived from AST representing the input variables in the section INPUTS.
 	Attributes
 	----------
-	token : Lexer Token object
+	token : Lexer token object (ID token in the EXPRS section that are not reserved keywords)
 	"""
 	__slots__ = ['token']
 	def __init__(self, token, cond=Globals.__T__):
@@ -336,7 +338,7 @@ class Var(AST):
 	The Var node: Derived from AST representing Input, Output and Expression variables.
 	Attributes
 	----------
-	token : Lexer Token object
+	token : Lexer token object (ID token in the EXPRS section that are not reserved keywords)
 	cond : predicate value of this predicated node
 	"""
 	__slots__ = ['token']
@@ -425,12 +427,14 @@ class LiftOp(AST):
 ##-- Transcendental and special ops
 class TransOp(AST):
 	"""
-	The TransOp node: Derived from AST representing unary operations.
+	The TransOp node: Derived from AST representing transcendental unary operations.
+
 	Attributes
 	----------
 	right : node type
 		The only child/operand of this node
-	token : Lexer Token object
+	token : Lexer token object (SQRT, SIN, ASIN, COS, TAN, EXP)
+
 	Notes
 	-----
 	These nodes have a single child and always called the right child.
@@ -460,7 +464,7 @@ class TransOp(AST):
 	@staticmethod
 	def eval(obj, inv=False):
 		"""
-		Sets rounding and returns simplified symbolic expression without recursively building expression from child.
+		Sets rounding, depth and returns simplified symbolic expression without recursively building expression from child.
 		Parameters
 		----------
 		obj : node type
@@ -468,8 +472,9 @@ class TransOp(AST):
 		-------
 		lexpr : symbolic expression
 		"""
+		assert isinstance(obj, TransOp)
 		lexpr = ops._FOPS[obj.token.type]([obj.children[0].f_expression])
-		obj.depth = obj.children[0].depth +1
+		obj.depth = obj.children[0].depth+1
 		obj.rnd = obj.children[0].rnd
 
 		return lexpr
@@ -490,30 +495,35 @@ class TransOp(AST):
 		obj.rnd = obj.children[0].rnd
 		return lexpr
 
-
-
 	def get_rounding(self):
+		"""
+		Returns the rounding value for this node.
+
+		Parameters
+		----------
+		None
+
+		Returns
+		-------
+		float
+			Product of the rounding factor and ULP for the transcendental operation
+		"""
 		return self.rnd * ops._ALLOC_ULP[self.token.type]
-
-
-
-
-
-
-
 
 
 ##-- corresponds to arith binary
 class BinOp(AST):
 	"""
 	The BinOp node: Derived from AST representing binary operations.
+
 	Attributes
 	----------
 	left : node type
 		The left child/operand of this node
-	token : Lexer Token object
+	token : Lexer token object (PLUS, MINUS, MUL, DIV)
 	right : node type
 		The right child/operand of this node
+
 	Notes
 	-----
 	These nodes have exactly two children.
@@ -545,7 +555,7 @@ class BinOp(AST):
 	@staticmethod
 	def eval(obj, inv=False):
 		"""
-		Sets rounding and returns simplified expression without recursively building expression.
+		Sets rounding, depth and returns simplified expression without recursively building expression.
 		Parameters
 		----------
 		obj : node type
@@ -580,20 +590,38 @@ class BinOp(AST):
 		
 
 	def get_rounding(self):
+		"""
+		Returns the rounding value for this node.
+
+		Parameters
+		----------
+		None
+
+		Returns
+		-------
+		float
+			Product of the rounding factor and ULP for the transcendental operation
+		"""
 		return self.rnd * ops._ALLOC_ULP[self.token.type]
-
-
-
-
-
-
-
-
-
 
 
 ##-- Binary Literal
 class BinLiteral(AST):
+	"""
+	The BinLiteral node: Derived from AST representing logical binary operations (AND, OR).
+
+	Attributes
+	----------
+	left : node type
+		The left child/operand of this node
+	token : Lexer token object (AND, OR)
+	right : node type
+		The right child/operand of this node
+
+	Notes
+	-----
+	These nodes have exactly two children.
+	"""
 	__slots__ = ['token']
 	def __init__(self, left, token, right):
 		super().__init__()
@@ -621,9 +649,23 @@ class BinLiteral(AST):
 
 	@staticmethod
 	def eval(obj, inv=False):
+		"""
+		Sets depth and returns simplified expression without recursively building expression.
+
+		Parameters
+		----------
+		obj : node type
+
+		Returns
+		-------
+		litexpr : string
+			String representation of the condition expression.
+		"""
 		obj.depth = max([child.depth for child in obj.children])+1
 		lstr = obj.children[0].f_expression
 		rstr = obj.children[1].f_expression
+
+		# TODO: prints here
 		print("LSTR:", lstr)
 		print("RSTR:", rstr)
 
@@ -636,6 +678,18 @@ class BinLiteral(AST):
 
 	@staticmethod
 	def rec_eval(obj):
+		"""
+		Sets depth and recursively builds expression from children and returns simplified expression.
+
+		Parameters
+		----------
+		obj : node type
+
+		Returns
+		-------
+		litexpr : string
+			String representation of the condition expression.
+		"""
 		obj.depth = max([child.depth for child in obj.children])+1
 		lstr = obj.children[0].rec_eval(obj.children[0])
 		rstr = obj.children[1].rec_eval(obj.children[1])
@@ -643,20 +697,19 @@ class BinLiteral(AST):
 		litexpr = ops._BOPS[obj.token.type]([lstr,rstr])
 
 		return litexpr
-		
-
-
-
-
-
-
-
-
-
-
 
 ##-- Comparison Operators
 class ExprComp(AST):
+	"""
+	The BinLiteral node: Derived from AST representing comparison operations.
+
+	Attributes
+	----------
+	token : Lexer token object (EQ, NEQ, LT, LEQ, GT, GEQ)
+	condSym : symbolic variable
+		Represents the expression for this node and has prefix 'ES' with suffix id assigned by Globals.EID
+		eg: ES0, ES1, ...
+	"""
 	__slots__ = ['token', 'condSym']
 	def __init__(self, left, token, right):
 		super().__init__()
@@ -675,9 +728,28 @@ class ExprComp(AST):
 
 	@staticmethod
 	def mod_eval(obj, inv, err0, err1):
+		"""
+		Sets depth of node and generates a modified (error adjusted) condition expression
+
+		Parameters
+		----------
+		obj : node type
+			Object of this node type
+		inv : ?
+		err0 : number
+			Error to be adjusted in the left side
+		err1 : number
+			Error to be adjusted in the right side
+
+		Returns
+		-------
+		str
+			Condition expression in string format
+		"""
 		obj.depth = max([child.depth for child in obj.children])+1
 		lstrTup = obj.children[0].f_expression
 		rstrTup = obj.children[1].f_expression
+
 		free_syms = lstrTup.__freeSyms__().union(rstrTup.__freeSyms__())
 		ERR0 = 0 if obj.children[0].derived_token==INTEGER else err0
 		ERR1 = 0 if obj.children[1].derived_token==INTEGER else err1
@@ -689,10 +761,12 @@ class ExprComp(AST):
 		#		print(child.f_expression, type(child))
 		#		print([c.derived_token==FLOAT for c in child.children])
 
+		# Error adjusted condition expression in string form.
 		cexpr = tuple(set(ops._MCOPS[obj.token.type if not inv else ops.invert[obj.token.type]]([fl.exprCond[0],\
 											 sl.exprCond[0], ERR0, ERR1]) \
 											 for fl in lstrTup \
 										     for sl in rstrTup))
+
 		if ("(True)" in cexpr):
 			return ("<<True>>",set())
 		else:
@@ -701,10 +775,21 @@ class ExprComp(AST):
 			return ("<<False>>",set()) if len(l1)==0 else ("<<{comp_expr}>>".format( comp_expr = ">> | <<".join(l1)), free_syms)
 
 
-		return "|".join(cexpr)
-
 	@staticmethod
 	def eval(obj):
+		"""
+		Sets depth of node and generates a condition expression without recursively building expression from children.
+
+		Parameters
+		----------
+		obj : node type
+			Object of this node type
+
+		Returns
+		-------
+		str
+			Condition expression in string format
+		"""
 		obj.depth = max([child.depth for child in obj.children])+1
 		lstrTup = obj.children[0].f_expression
 		rstrTup = obj.children[1].f_expression
@@ -719,6 +804,18 @@ class ExprComp(AST):
 
 	@staticmethod
 	def rec_eval(obj):
+		"""
+		Sets depth of node and generates condition expression by recursively building expression from children.
+		Parameters
+		----------
+		obj : node type
+			Object of this node type
+
+		Returns
+		-------
+		str
+			Condition expression in string format
+		"""
 		obj.depth = max([child.depth for child in obj.children])+1
 		lstrTup = obj.children[0].rec_eval(obj.children[0])
 		rstrTup = obj.children[1].rec_eval(obj.children[1])
