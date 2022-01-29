@@ -54,14 +54,17 @@ def parseArguments():
 	parser.add_argument('--useZ3', help='Enabled using Z3 for constraint solving. Dreal gets disabled', default=False, action='store_true')
 	parser.add_argument('--stable', help='Inform to ignore instability correction', default=False, action='store_true')
 	parser.add_argument('--gverbose', help='Create dumps of each optimizer query for debugging', default=False, action='store_true')
-	                                  
+	parser.add_argument('-a', '--use_atomic_conditions',
+						help='Uses Atomic Conditions for calculating path strength instead of Derivatives',
+						default=False,
+						action='store_true')
 
 	result = parser.parse_args()
 	return result
 
 
 def rebuildASTNode(node, completed):
-	
+
 	for child in node.children:
 		if not completed.__contains__(child):
 			rebuildASTNode(child, completed)
@@ -110,8 +113,8 @@ def rebuildAST():
 
 def abstractNodes(results):
 
-	
-	
+
+
 	for node, res in results.items():
 		Globals.FID += 1
 		name = seng.var("FR"+str(Globals.FID))
@@ -124,7 +127,7 @@ def abstractNodes(results):
 
 		Globals.inputVars[name] = {"INTV" : res["INTV"]}
 		Globals.global_symbol_table[0]._symTab[name] = ((node,Globals.__T__),)
-	
+
 
 # Performs error anaylsis on the candidates and returns "result" dictionary. The candidates could be abstracted nodes.
 def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False):
@@ -162,7 +165,7 @@ def full_analysis(probeList, argList, maxdepth):
 	print("-----------------------------------\n")
 	print(res)
 	return res
-	
+
 
 #def ErrorAnalysis(argList):
 #
@@ -187,7 +190,7 @@ def mod_probe_list(probeNodeList):
 	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
 	probeList = [nodeList[0][0] for nodeList in probeList]
 	return probeList
-	
+
 
 	#opList = helper.get_opList(DIV)
 	#D = helper.find_common_dependence(opList, 5, 40)
@@ -307,13 +310,13 @@ if __name__ == "__main__":
 	results = ErrorAnalysis(argList)
 	ea2 = time.time()
 
-	
+
 	#------ Write to File -----------------------------------------
 	helper.writeToFile(results, fout, argList)
 	fout.close()
 
 	end_exec_time = time.time()
-	full_time = end_exec_time - start_exec_time 
+	full_time = end_exec_time - start_exec_time
 
 	logger.info("Optimizer calls : {num_calls}\n".format(num_calls = Globals.gelpiaID))
 	logger.info("Smt calls : {num_calls}\n".format(num_calls = Globals.solver_calls))
@@ -328,7 +331,7 @@ if __name__ == "__main__":
 	print("LEVEL_TOP: PreProcessing time : {preprocess_time}".format(preprocess_time = pr2-pr1))
 	print("LEVEL_TOP: Analysis time : {analysis_time}".format(analysis_time = ea2-ea1))
 	print("LEVEL_TOP: Full time : {full_time}".format(full_time = full_time))
-	
+
 	print(Globals.argList.stat_err_enable, Globals.argList.stat_err_fraction)
 
 	## --- some extra profiling data
@@ -355,7 +358,7 @@ if __name__ == "__main__":
 			entry = D1.get(KEY, [])
 			entry.append([v[0], (k[0].exprCond[0], k[1].exprCond[0], k)])
 			D1[KEY] = entry
-			
+
 	for k,v in D1.items():
 		D1[k].sort(key=lambda tup: -tup[0])
 

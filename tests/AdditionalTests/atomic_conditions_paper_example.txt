@@ -1,0 +1,16 @@
+# --file ../tests/AdditionalTests/atomic_conditions_paper_example.txt --gverbose --use_atomic_conditions
+
+INPUTS {
+	x fl64 : (0.1, 1);
+}
+
+OUTPUTS {
+	v4 ;
+}
+
+EXPRS {
+	v1 = cos(x);
+	v2 = 1.0-v1;
+	v3 = x*x;
+	v4 = v2/v3;
+}

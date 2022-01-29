@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
 ##-- parentTracker 		 -> node -> parent information post trimming (number of parents)
 ##-- completed1			 -> completed list for bfs traversal (Keeps track of nodes whose backward derivatives have been calculated for each depth)
 ##-- completed2			 -> reachable list for dfs traversal (keeping both for consistency check)
-##-- bwdDeriv			 -> Dictionary with derivative information (Contains dictionaries of derivates of expression corresponding to the node in the outer dictionary with respect to node in inner dictionary)
+##-- bwdDeriv			 -> Dictionary with derivative information (Contains dictionaries of derivates of expression corresponding to the node in the inner dictionary with respect to node in outer dictionary)
+##-- atomic_condition_numbers	 -> Dictionary with atomic condition numbers (Contains atomic condition number of expression corresponding to the node in the inner dictionary with respect to node in outer dicitonary)
 ##-- externConstraints   -> Constraints from "REQUIRES" pragmas
 ##-- externFreeSymbols   -> Free symbols used in external constraints
 ##-- results 			 -> dictionary of results to be returned
@@ -46,7 +47,7 @@ class AnalyzeNode_Cond(object):
 		#self.Accumulator = defaultdict(int)
 		## ------- Various Accumulator Types -------------
 		##		// Err
-		self.Accumulator = {} 
+		self.Accumulator = {}
 		self.StatAccumulator = {}
 		self.MixedAccumulator = {}
 		##		// Instability
@@ -56,7 +57,8 @@ class AnalyzeNode_Cond(object):
 		##------------------------------------------------
 
 		self.results = {}
-		self.bwdDeriv = {}
+		self.bwdDeriv = defaultdict(dict)
+		self.atomic_condition_numbers = defaultdict(dict)
 		self.externConstraints = ""
 		self.externFreeSymbols = set()
 		self.cond_syms = set()
@@ -93,9 +95,14 @@ class AnalyzeNode_Cond(object):
 
 	# Sets partial derivative of node with respect to itself equal to one for each node in trimList and records number
 	# of parents.
+	# Let p stand for the partial derivative symbol 'del'
+	# For every output z, pz/pz = 1
+	# Also sets the atomic condition number of node with respect to itself equal to one fora each node in trimList.
 	def __setup_outputs__(self):
 		for node in self.trimList:
 			self.bwdDeriv[node] = {node: SymTup((Sym(1,Globals.__T__), ))}
+			if self.argList.use_atomic_conditions:
+				self.atomic_condition_numbers[node] = {node: ((Sym(1,Globals.__T__), ))}
 			self.parentTracker[node] = len(self.parent_dict[node])
 
 	# Initializes workList for derivative calculation and error analysis
@@ -116,7 +123,7 @@ class AnalyzeNode_Cond(object):
 		print("Ext Constraints: ", subcond)
 	#	self.externConstraints = "( " + " && ".join(["("+str(n.f_expression)+")" for n in Globals.externPredTable.keys()]) + " )"
 
-		
+
 	def converge_parents(self, node):
 		#print(node.depth, len(node.f_expression))
 		#print(type(node).__name__, node.depth, self.parentTracker[node], len(node.parents) , len(self.parent_dict[node]))#, node.f_expression)
@@ -125,7 +132,13 @@ class AnalyzeNode_Cond(object):
 
 
 	# Calculates the backward derivative of node
-	#
+	# Let p stand for the partial derivative symbol 'del'
+	# For every output s, ps/pu = sum for all i (ps/pw_i)*(pw_i/pu) where u are all the inputs and w_i are the
+	# intermediate nodes.
+	# Let T stand for atomic condition number
+	# Also calculate the atomic condition number of every output s with respect every input u using the formula
+	# T_z(u) is the atomic condition number of operation at node z with respect to node u
+	# T_z(u) = u * (pz/pu) / z
 	def visit_node_deriv(self, node):
 		st = time.time()
 		outList = self.bwdDeriv[node].keys()
@@ -137,26 +150,36 @@ class AnalyzeNode_Cond(object):
 				for i, child_node in enumerate(node.children):
 					for outVar in outList:
 						sti = time.time()
-						self.bwdDeriv[child_node] = self.bwdDeriv.get(child_node, {})
 						self.bwdDeriv[child_node][outVar] = self.condmerge(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
 							self.bwdDeriv[node][outVar] * \
 							SymTup((Sym(1.0, node.nodeList[i][1]),)),trim=True))
+
 						eti = time.time()
 						#print("Lift-op:One bak prop time = ", eti-sti)
 					self.next_workList.append(child_node)
-					self.parentTracker[child_node] += 1						
+					self.parentTracker[child_node] += 1
 			else:
 				DerivFunc = ops._DFOPS[node.token.type]
 				opList = [child.f_expression for child in node.children]
 				for i, child_node in enumerate(node.children):
 					for outVar in outList:
+
 						sti = time.time()
-						self.bwdDeriv[child_node] = self.bwdDeriv.get(child_node, {})
 						self.bwdDeriv[child_node][outVar] = self.condmerge(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
 								self.bwdDeriv[node][outVar] * \
 								(SymTup((Sym(0.0, Globals.__T__),)) \
 								 if utils.isConst(child_node) else \
 								 DerivFunc[i](opList)), trim=True))
+						print("Derivs")
+						print(self.bwdDeriv[child_node][outVar])
+
+						if self.argList.use_atomic_conditions:
+							self.atomic_condition_numbers[child_node][outVar] = self.condmerge(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
+								self.bwdDeriv[node][outVar] * \
+								(SymTup((Sym(0.0, Globals.__T__),)) \
+								 if utils.isConst(child_node) else \
+								 DerivFunc[i](opList)), trim=True)) * child_node.f_expression / outVar.f_expression
+						# print(self.atomic_condition_numbers[child_node][outVar])
 						eti = time.time()
 						#print("One bak prop time = ", eti-sti)
 					self.next_workList.append(child_node)
@@ -169,7 +192,7 @@ class AnalyzeNode_Cond(object):
 
 	# For each node in the workList, calculates the backward derivative for the children with respect to this node.
 	# Partitions the next_workList into workList and next_workList using the next_depth.
-	# Eventually backward derivatives of all nodes have been calculated with respect to the trimList nodes.
+	# Eventually backward derivatives of all trimList nodes have been calculated with respect to all nodes.
 	def traverse_ast(self):
 		next_workList = []
 		curr_depth = 0
@@ -184,8 +207,10 @@ class AnalyzeNode_Cond(object):
 				pass
 			# TODO: Understand the converge_parents function and why it is needed.
 			elif (self.converge_parents(node)):
+				print("Converge Parents True")
 				self.visit_node_deriv(node)
 			else:
+				print("Converge Parents False")
 				self.workList.append(node)
 
 			if(len(self.workList)==0 and next_depth!=-1 and len(self.next_workList)!=0):
@@ -341,8 +366,8 @@ class AnalyzeNode_Cond(object):
 			self.propagate_symbolic(node)
 		self.completed2[node.depth].add(node)
 
-	# Adds all Symbol tuples in tupleList
-	# TODO: Study this method
+	# Adds all SymTup that share the same cond in a SymTup List.
+	# Concatenates the added SymTup
 	def condmerge(self, tupleList):
 		ld = {}
 		for els in tupleList:
@@ -354,7 +379,7 @@ class AnalyzeNode_Cond(object):
 		#	print(v,"\n")
 		#print("Size,", len(tupleList))
 
-		return reduce(lambda x,y : x.__concat__(y,trim=True), [v for k,v in ld.items()], SymTup((Sym(0.0,Globals.__T__),)))
+		return reduce(lambda x,y : x.__concat__(y,trim=True), ld.values(), SymTup((Sym(0.0,Globals.__T__),)))
 
 	def subsitute(self, tcond, symDict, inv_symDict):
 		#symDict = {fsym: Globals.condExprBank[fsym][0] for fsym in free_syms}

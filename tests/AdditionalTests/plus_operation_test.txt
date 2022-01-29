@@ -1,0 +1,14 @@
+# --file ../tests/AdditionalTests/plus_operation_test.txt --gverbose --use_atomic_conditions
+
+INPUTS {
+	x fl64 : (0.1, 1);
+	y fl64 : (1.1, 2);
+}
+
+OUTPUTS {
+	v1 ;
+}
+
+EXPRS {
+	v1 = x + y;
+}
