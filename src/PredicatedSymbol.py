@@ -11,10 +11,8 @@ from collections.abc import Iterable
 
 opLimit = 0
 
-# A Class representing Predicated Symbols. Contains the expression and the associated predicated with operations defined
-# for Predicated symbols.
+# TODO: Is this class needed? No usages found
 class PredSymbol(object):
-
 	__slots__ = ['exprCond']
 
 	def __init__(self, expr, cond=Globals.__T__):
@@ -49,6 +47,10 @@ class PredSymbol(object):
 		return PredSymbol( (self.exprCond[0] % obj.exprCond[0]).expand() , \
 				 (self.exprCond[1] & obj.exprCond[1]).simplify())
 
+	def __neg__(self):
+		return PredSymbol( (-self.exprCond[0],
+							self.exprCond[1]))
+
 	def __cos__(self):
 		return PredSymbol( (seng.cos(self.exprCond[0]),	\
 							self.exprCond[1]) )
@@ -73,7 +75,7 @@ class PredSymbol(object):
 	def __repr__(self):
 		return self.__str__()
 
-
+# TODO: Is this class needed? No usages found
 class PSList(list):
 	def __init__(self, *args, **kwargs):
 		super(PSList, self).__init__(args[0])
@@ -96,6 +98,9 @@ class PSList(list):
 	def __mod__(self, other):
 		return PSList([self[i]%other[j] for i in range(len(self)) for j in range(len(other))])
 
+	def __neg__(self):
+		return PSList([-self[i] for i in range(len(self))])
+
 	def __cos__(self):
 		return PSList([self[i].__cos__() for i in range(len(self))])
 
@@ -110,9 +115,6 @@ class PSList(list):
 
 	def __concat__(self, other):
 		return PSList(list(self) + list(other))
-		
-
-
 
 	def __str__(self):
 		return '[ {exp_cond_list} ]'.format( \
@@ -123,10 +125,15 @@ class PSList(list):
 		return self.__str__()
 
 
-
-
 class Sym(object):
+	"""
+	Represents Predicated Expressions. Contains the symbolic expressions and the associated predicates.
 
+	Attributes
+	----------
+	exprCond : tuple
+		A tuple of expression and condition.
+	"""
 	def __init__(self, expr='', cond=Globals.__T__):
 		self.exprCond = (expr, cond)
 
@@ -171,7 +178,6 @@ class Sym(object):
 				Globals.simplify = False
 			return Sym(expr1, cond) if op1 < op2 else Sym(expr2, cond) ;
 
-
 	def __mul__(self, obj):
 		return Sym( self.exprCond[0]*obj, self.exprCond[1]) if not isinstance(obj, Sym) else \
 		Sym( self.exprCond[0] * obj.exprCond[0]	,\
@@ -191,6 +197,10 @@ class Sym(object):
 		symexpr = self.exprCond[0] % obj.exprCond[0]
 		return Sym( seng.expand(symexpr) if seng.count_ops(symexpr) < opLimit else symexpr	,\
 				(self.exprCond[1] & obj.exprCond[1]).simplify() )
+
+	def __neg__(self):
+		return Sym( -self.exprCond[0],
+					self.exprCond[1])
 
 	def __tan__(self):
 		return Sym( seng.tan(self.exprCond[0])	,\
@@ -266,6 +276,7 @@ class Sym(object):
 	def __repr__(self):
 		return self.__str__()
 
+
 def condmerge(tupleList):
 		ld = {}
 		for els in tupleList:
@@ -279,7 +290,18 @@ def condmerge(tupleList):
 
 		return reduce(lambda x,y : x.__concat__(y,trim=True), [v for k,v in ld.items()], SymTup((Sym(0.0,Globals.__T__),)))
 
+# A Class representing Predicated Symbols. Contains the expression and the associated predicated with operations defined
+# for Predicated symbols.
 class SymTup(tuple):
+	"""
+	Represents the value of a node in the Conditional Computation Graph. The value is a tuple of Predicated expressions
+	(Sym).
+
+	Attributes
+	----------
+	Tuple
+		A tuple of predicated expressions.
+	"""
 	def __new__(self, tup):
 		return tuple.__new__(SymTup, tup)
 
@@ -298,8 +320,6 @@ class SymTup(tuple):
 							  if  not ( sel.exprCond[1]==Globals.__F__  or sel.exprCond[0]==seng.nan))
 		#return s
 		return (s) if(len(s)!=0) else SymTup((Sym(0.0, Globals.__T__),))
-
-
 
 	def __mul__(self, obj):
 		st1 = time.time()
@@ -335,6 +355,11 @@ class SymTup(tuple):
 
 	def __mod__(self, obj):
 		return  SymTup((fl%sl for fl in self for sl in obj))
+
+	def __neg__(self):
+		t1 = tuple(set(el for el in self if
+					   not (el.exprCond[1] == Globals.__F__ or el.exprCond[1] == False or el.exprCond[0] == seng.nan)))
+		return SymTup((-fl for fl in t1))
 
 	def __tan__(self):
 		t1 = tuple(set(el for el in self if  not (el.exprCond[1]==Globals.__F__ or  el.exprCond[1]==False or el.exprCond[0]==seng.nan)))
@@ -375,7 +400,6 @@ class SymTup(tuple):
 	def __Bcountops__(self):
 		return max([fl.__Bcountops__() for fl in self]+[0])
 
-	
 	def __concat__(self, other, trim=False):
 		if trim:
 			st1 = time.time()
@@ -393,8 +417,6 @@ class SymTup(tuple):
 	def __freeSyms__(self):
 		return reduce(lambda x,y: x.union(y), [sl.__freeSyms__() for sl in self], set())
 
-	
-
 	def __str__(self):
 		return 'Tup( {expr_cond_list} )'.format( \
 				expr_cond_list = ','.join([self[i].__str__() for i in range(len(self))]) \
@@ -411,6 +433,7 @@ def	SymConcat(t1, t2):
 
 def lambda_add():
 	return lambda x : x[0] + x[1]
+
 
 if __name__ == "__main__":
 	x = sym.symbols('x')

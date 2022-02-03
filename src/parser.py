@@ -61,6 +61,8 @@ class Sparser(object):
 			# TODO: What is this? Asserting the opposite of the if condition inside the if block. How will it ever trigger?
 			if token.value not in Globals.inputVars.keys():
 				print(token.value)
+				print("CHECK THIS CASE!!! READ THE ABOVE TODO!!!")
+				exit(1)
 				assert(token.value in Globals.inputVars.keys())
 			self.current_symtab._symTab[token.value] = ((node, Globals.__T__),)
 			#print("Check-tokens:", token, self.current_scope, lval, Globals.global_symbol_table[0]._symTab.keys())
@@ -506,7 +508,7 @@ class Sparser(object):
 
 	def assign_expr(self):
 		"""
-		assign_expr : ID [FPTYPE | INTTYPE] ASSIGN arith_expr SEMICOLON
+		assign_expr : ID [FPTYPE | INTTYPE]? ASSIGN arith_expr SEMICOLON
 		"""
 		if self.current_token.type == ID:
 			name = str(self.current_token.value)

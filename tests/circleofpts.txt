@@ -1,10 +1,8 @@
+# --file ../tests/circleofpts.txt --gverbose --use_atomic_conditions
 
 INPUTS {
-	eps fl64 : (-0.00200, 0.00200 );
-	px0 fl64 : (-5.071067 - eps, 5.071067 + eps);
-	py0 fl64 : (-4.071067 - eps, 4.071067 + eps);
-	#px0 fl64 : (-2.071067 - eps, -2.071067 + eps);
-	#py0 fl64 : (-2.071067 - eps, -2.071067 + eps);
+	px0 fl64 : (1.1, 5);
+	py0 fl64 : (1.1, 6);
 	cx0 fl64 : (2.0, 2.0);
 	cy0 fl64 : (3.0, 3.0);
 	radius fl64 : (10.0, 10.0);
@@ -19,9 +17,6 @@ EXPRS {
 	
 	final_radius = radius ;
 
-	cx = cx0;
-	cy = cy0;
-
 	dx0 = px0 - cx0;
 	dy0 = py0 - cy0;
 
@@ -30,9 +25,6 @@ EXPRS {
 	if (dist2 > (final_radius*final_radius)) then
 		dist = sqrt(dist2);
 		newRadius = (final_radius + dist) * 0.5 ;
-		k = (newRadius - radius)/dist ;
-		cx = cx0 + dx0*k;
-		cy = cy0 + dy0*k;
 		final_radius = newRadius ;
 	endif
 }

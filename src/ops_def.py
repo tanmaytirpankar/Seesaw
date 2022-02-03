@@ -46,69 +46,70 @@ def bothNotConst(a,b):
 	#return False if isinstance(a, numbers.Number) and isinstance(b, numbers.Number) else True
 
 
-_FOPS = {	PLUS	:	lambda L 	:	L[0] + L[1]	,	\
-			MINUS	:	lambda L	:	L[0] - L[1] ,	\
-			MUL		:	lambda L	:	L[0] * L[1] ,	\
-			DIV		:	lambda L	:	L[0] / L[1] ,	\
-			SQRT	:	lambda L	:	L[0].__sqrt__() ,	\
-			SIN		:	lambda L	:	L[0].__sin__()	,	\
-			ASIN	:	lambda L	:	L[0].__asin__()	,	\
-			COS		:	lambda L	:	L[0].__cos__()	,	\
-			TAN		:	lambda L	: 	L[0].__tan__()	,	\
-			EXP		:	lambda L	:	L[0].__exp__()	\
+_FOPS = {	PLUS	:	lambda L 	:	L[0] + L[1],
+			MINUS	:	lambda L	:	L[0] - L[1],
+			MUL		:	lambda L	:	L[0] * L[1],
+			DIV		:	lambda L	:	L[0] / L[1],
+			SQRT	:	lambda L	:	L[0].__sqrt__(),
+			EXP		:	lambda L	:	L[0].__exp__(),
+			SIN		:	lambda L	:	L[0].__sin__(),
+			ASIN	:	lambda L	:	L[0].__asin__(),
+			COS		:	lambda L	:	L[0].__cos__(),
+			TAN		:	lambda L	: 	L[0].__tan__(),
+
 }
 
 
-_COPS = {	\
-			LT		:	lambda L	:	str("(") + str(L[0]) +" <"+ str(L[1]) + str(")") if bothNotConst(L[0],L[1])	else\
-										str("(") + str(L[0] < L[1])+ str(")")	,	\
-			LEQ		:	lambda L	:	str("(") + str(L[0]) +"<="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] <= L[1]) + str(")")	,	\
-			GT		:	lambda L	:	str("(") + str(L[0]) +"> "+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] > L[1])+ str(")")	, \
-			GEQ		:	lambda L	:	str("(") + str(L[0]) +">="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] >= L[1]) + str(")")	, \
-			EQ		:	lambda L	:	str("(") + str(L[0]) +"=="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] == L[1]) + str(")")	, \
-			NEQ		:	lambda L	:	str("(") + str(L[0]) +"!="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] != L[1]) + str(")")	\
+_COPS = {
+			LT		:	lambda L	:	str("(") + str(L[0]) +" <"+ str(L[1]) + str(")") if bothNotConst(L[0],L[1])	else
+										str("(") + str(L[0] < L[1])+ str(")"),
+			LEQ		:	lambda L	:	str("(") + str(L[0]) +"<="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] <= L[1]) + str(")"),
+			GT		:	lambda L	:	str("(") + str(L[0]) +"> "+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] > L[1])+ str(")"),
+			GEQ		:	lambda L	:	str("(") + str(L[0]) +">="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] >= L[1]) + str(")"),
+			EQ		:	lambda L	:	str("(") + str(L[0]) +"=="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] == L[1]) + str(")"),
+			NEQ		:	lambda L	:	str("(") + str(L[0]) +"!="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] != L[1]) + str(")")
 }
 
 
 # inverted token of _MCOPS
-invert = {	\
-			LT		:	GEQ 	,\
-			GT		:	LEQ	,\
-			LEQ		:	GT	,\
-			GEQ		:	LT	,\
-			EQ		:	NEQ	,\
-			NEQ		:	EQ ,\
-			AND		:	OR	,\
-			OR		:	AND \
+invert = {
+			LT		:	GEQ,
+			GT		:	LEQ,
+			LEQ		:	GT,
+			GEQ		:	LT,
+			EQ		:	NEQ,
+			NEQ		:	EQ,
+			AND		:	OR,
+			OR		:	AND
 }
 
 #L = [f,s,ef,es] Modified _COPS
-_MCOPS = {	\
-			LT		:	lambda L	:	str("(") + str(L[0]-L[3]) +" <"+ str(L[1]+L[2]) + str(")") if bothNotConst(L[0],L[1])	else\
-										str("(") + str(L[0] < L[1])+ str(")")	,	\
-			LEQ		:	lambda L	:	str("(") + str(L[0]-L[3]) +"<="+ str(L[1]+L[2]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] <= L[1]) + str(")")	,	\
-			GT		:	lambda L	:	str("(") + str(L[0]+L[3]) +"> "+ str(L[1]-L[2]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] > L[1])+ str(")")	, \
-			GEQ		:	lambda L	:	str("(") + str(L[0]+L[3]) +">="+ str(L[1]-L[2]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] >= L[1]) + str(")")	, \
-			EQ		:	lambda L	:	str("(") + str(L[0]) +"=="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] == L[1]) + str(")")	, \
-			NEQ		:	lambda L	:	str("(") + str(L[0]) +"!="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else\
-										str("(") + str(L[0] != L[1]) + str(")")	\
+_MCOPS = {
+			LT		:	lambda L	:	str("(") + str(L[0]-L[3]) +" <"+ str(L[1]+L[2]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] < L[1])+ str(")"),
+			LEQ		:	lambda L	:	str("(") + str(L[0]-L[3]) +"<="+ str(L[1]+L[2]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] <= L[1]) + str(")"),
+			GT		:	lambda L	:	str("(") + str(L[0]+L[3]) +"> "+ str(L[1]-L[2]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] > L[1])+ str(")"),
+			GEQ		:	lambda L	:	str("(") + str(L[0]+L[3]) +">="+ str(L[1]-L[2]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] >= L[1]) + str(")"),
+			EQ		:	lambda L	:	str("(") + str(L[0]) +"=="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] == L[1]) + str(")"),
+			NEQ		:	lambda L	:	str("(") + str(L[0]) +"!="+ str(L[1]) + str(")") if bothNotConst(L[0],L[1]) else
+										str("(") + str(L[0] != L[1])
 }
 
 
 # ops over binary literals
-_BOPS = { \
-			AND		:	lambda L	:	"<<False>>" if ("False" in L[0] or "False" in L[1]) else "<<True>>" if "True" in L[1] and "True" in L[0] else L[0] if "True" in L[1] else L[1] if "True" in L[0] else   str("(") + L[0] +"&"+ L[1] + str(")"), \
-			OR		:	lambda L	:	"<<True>>" if ("True" in L[0] or "True" in L[1]) else "<<False>>" if "False" in L[1] and "False" in L[0] else L[0] if "False" in L[1] else L[1] if "False" in L[0] else str("(") + L[0] +"|"+ L[1] + str(")"), \
-			NOT		:	lambda L	:	str("(~(") + L[0] + str("))") \
+_BOPS = {
+			AND		:	lambda L	:	"<<False>>" if ("False" in L[0] or "False" in L[1]) else "<<True>>" if "True" in L[1] and "True" in L[0] else L[0] if "True" in L[1] else L[1] if "True" in L[0] else   str("(") + L[0] +"&"+ L[1] + str(")"),
+			OR		:	lambda L	:	"<<True>>" if ("True" in L[0] or "True" in L[1]) else "<<False>>" if "False" in L[1] and "False" in L[0] else L[0] if "False" in L[1] else L[1] if "False" in L[0] else str("(") + L[0] +"|"+ L[1] + str(")"),
+			NOT		:	lambda L	:	str("(~(") + L[0] + str("))")
 			#OR		:	lambda L	:	L[0] +"|"+ L[1], \
 			#NOT		:	lambda L	:	(~(L[0]))	\
 }
@@ -118,21 +119,40 @@ DFOPS_LIST = [PLUS, MINUS, MUL, DIV, SQRT, EXP, SIN, ASIN, COS, TAN, IF]
 
 # derivatives
 _DFOPS = { \
-			PLUS	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),)), \
-			             lambda L : SymTup((Sym(1.0,Globals.__T__),))],\
-			MINUS	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),)), \
-			             lambda L : SymTup((Sym(-1.0,Globals.__T__),))],\
-			MUL		:	[lambda L : L[1], lambda L : L[0]]	,\
-			DIV		:	[lambda L : SymTup((Sym(1.0, Globals.__T__),))/L[1], \
-						 lambda L : (SymTup((Sym(-1.0, Globals.__T__),))*L[0])/(L[1].__pow__(2))], \
-			SQRT	:	[lambda L : SymTup((Sym(-0.5, Globals.__T__),))/(L[0].__sqrt__())], \
-			EXP		:	[lambda L : L[0]], \
-			SIN		:	[lambda L : L[0].__cos__()], \
-			ASIN	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),)) / \
-									(SymTup((Sym(1.0,Globals.__T__),)) - (L[0].__pow__(2))).__sqrt__()], \
-			COS		:	[lambda L : (L[0].__sin__())*(-1.0)], \
-			#TAN		:	[lambda L : L[0].__cos__()/L[0].__sin__()] \
-			TAN		:	[lambda L : SymTup((Sym(1.0,Globals.__T__),))/L[0].__tan__()] \
+			PLUS	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),)),
+			             lambda L : SymTup((Sym(1.0,Globals.__T__),))],
+			MINUS	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),)),
+			             lambda L : SymTup((Sym(-1.0,Globals.__T__),))],
+			MUL		:	[lambda L : L[1], lambda L : L[0]],
+			DIV		:	[lambda L : SymTup((Sym(1.0, Globals.__T__),))/L[1],
+						 lambda L : (SymTup((Sym(-1.0, Globals.__T__),))*L[0])/(L[1].__pow__(2))],
+			SQRT	:	[lambda L : SymTup((Sym(-0.5, Globals.__T__),))/(L[0].__sqrt__())],
+			EXP		:	[lambda L : L[0]],
+			SIN		:	[lambda L : L[0].__cos__()],
+			ASIN	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),)) /
+									(SymTup((Sym(1.0,Globals.__T__),)) - (L[0].__pow__(2))).__sqrt__()],
+			COS		:	[lambda L : (L[0].__sin__())*(-1.0)],
+			#TAN		:	[lambda L : L[0].__cos__()/L[0].__sin__()]
+			TAN		:	[lambda L : SymTup((Sym(1.0,Globals.__T__),))/L[0].__tan__()]
+}
+
+_atomic_condition_ops = {
+			PLUS	:	[lambda operand_list : (operand_list[0]/(operand_list[0]+operand_list[1])).__abs__(),
+						 lambda operand_list : (operand_list[1]/(operand_list[0]+operand_list[1])).__abs__()],
+			MINUS	:	[lambda operand_list : (operand_list[0]/(operand_list[0]-operand_list[1])).__abs__(),
+						 lambda operand_list : (-operand_list[1]/(operand_list[0]-operand_list[1])).__abs__()],
+			MUL		:	[lambda operand_list : SymTup((Sym(1.0, Globals.__T__),)),
+						 lambda operand_list : SymTup((Sym(1.0, Globals.__T__),))],
+			DIV		:	[lambda operand_list : SymTup((Sym(1.0, Globals.__T__),)),
+						 lambda operand_list : SymTup((Sym(1.0, Globals.__T__),))],
+			SQRT	:	[lambda operand_list : SymTup((Sym(0.5, Globals.__T__),))],
+			EXP		:	[lambda operand_list : operand_list[0].__abs__()],
+			SIN		:	[lambda operand_list : (operand_list[0] * operand_list[0].__cos__() / operand_list[0].__sin__()).__abs__()],
+			ASIN	:	[lambda operand_list : operand_list[0] /
+											   (((SymTup((Sym(1.0,Globals.__T__),))-operand_list[0]).__sqrt__()) -
+												operand_list[0].__asin__())],
+			COS		:	[lambda operand_list : (operand_list[0] * operand_list[0].__sin__() / operand_list[0].__cos__()).__abs__()],
+			TAN		:	[lambda operand_list : (operand_list[0] / (operand_list[0].__sin__() * operand_list[0].__cos__())).__abs__()]
 }
 
 

@@ -434,8 +434,20 @@ def get_statistics(sym_expr, inputDict=None):
 	return res_avg_maxres
 
 
-
 def isConst(obj):
+	"""
+	Checks if node represents a constant. We only have Num nodes representing constants
+
+	Parameters
+	----------
+	obj : node type
+		Any node.
+
+	Returns
+	-------
+	bool
+		Returns True if node is Num else False
+	"""
 	if type(obj).__name__ == "Num":
 		return True
 	else:

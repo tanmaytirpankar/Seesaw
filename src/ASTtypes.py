@@ -391,7 +391,7 @@ class LiftOp(AST):
 	__slots__ = ['token']
 	def __init__(self, nodeList, token, cond=Globals.__T__):
 		super().__init__()
-		self.token = CToken('IF', value=None)
+		self.token = CToken('IF', value="")
 #		self.token.type = IF
 		self.depth = max([n[0].depth for n in nodeList]) + 1
 		self.nodeList = nodeList
@@ -401,6 +401,17 @@ class LiftOp(AST):
 		for n in nodeList:
 			n[0].parents += (self, )
 		#print(nodeList)
+
+	def __repr__(self):
+		"""
+		Returns
+		-------
+		repr_str : str
+			String representation of the class.
+		"""
+		repr_str = '\nLiftOp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() + '\n}'
+		return repr_str
+
 
 	@staticmethod
 	def eval(obj, inv=False):
@@ -631,6 +642,19 @@ class BinLiteral(AST):
 		left.parents += (self,)
 		right.parents += (self,)
 
+	def __repr__(self):
+		"""
+		Returns
+		-------
+		repr_str : str
+			String representation of the class.
+		"""
+		repr_str = '\nBinLiteral{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
+				   + '\n\tleft child:' + repr(self.children[0].token.value) \
+				   + '\n\tright child:' + repr(self.children[1].token.value) \
+				   + '\n}'
+		return repr_str
+
 		#self.f_expression = self.eval(self)
 
 #	@staticmethod
@@ -725,6 +749,19 @@ class ExprComp(AST):
 
 		## have the f_expressions evaluted early for conds
 		#self.f_expression = self.eval(self)
+
+	def __repr__(self):
+		"""
+		Returns
+		-------
+		repr_str : str
+			String representation of the class.
+		"""
+		repr_str = '\nExprComp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
+				   + '\n\tleft child:' + repr(self.children[0].token.value) \
+				   + '\n\tright child:' + repr(self.children[1].token.value) \
+				   + '\n}'
+		return repr_str
 
 	@staticmethod
 	def mod_eval(obj, inv, err0, err1):

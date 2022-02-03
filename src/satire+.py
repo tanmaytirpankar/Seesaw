@@ -133,7 +133,7 @@ def abstractNodes(results):
 def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False):
 
 	Globals.condExprBank.clear()
-	obj = AnalyzeNode_Cond(sel_candidate_list, argList, maxdepth, paving=argList.realpaver)
+	obj = AnalyzeNode_Cond(sel_candidate_list, argList, maxdepth, use_atomic_conditions=argList.use_atomic_conditions, paving=argList.realpaver)
 	print("Start!")
 	results = obj.start()
 
