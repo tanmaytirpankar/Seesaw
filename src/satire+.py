@@ -58,6 +58,14 @@ def parseArguments():
 						help='Uses Atomic Conditions for calculating path strength instead of Derivatives',
 						default=False,
 						action='store_true')
+	parser.add_argument('-s', '--examine_stability',
+						help='Examine stability of algorithm/program',
+						default=False,
+						action='store_true')
+	parser.add_argument('-e', '--error_analysis',
+						help='Performs Error Analysis which includes finding worst case error and examining instability.',
+						default=False,
+						action='store_true')
 
 	result = parser.parse_args()
 	return result
@@ -130,10 +138,10 @@ def abstractNodes(results):
 
 
 # Performs error anaylsis on the candidates and returns "result" dictionary. The candidates could be abstracted nodes.
-def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False):
+def simplify_with_abstraction(sel_candidate_list, program_argument_list, maxdepth, final=False):
 
 	Globals.condExprBank.clear()
-	obj = AnalyzeNode_Cond(sel_candidate_list, argList, maxdepth, use_atomic_conditions=argList.use_atomic_conditions, paving=argList.realpaver)
+	obj = AnalyzeNode_Cond(sel_candidate_list, program_argument_list, maxdepth, use_atomic_conditions=program_argument_list.use_atomic_conditions, paving=program_argument_list.realpaver)
 	print("Start!")
 	results = obj.start()
 
@@ -153,21 +161,21 @@ def simplify_with_abstraction(sel_candidate_list, argList, maxdepth, final=False
 	return dict()
 
 # Performs error analysis on nodes in the probeList and returns the "result" dictionary
-def full_analysis(probeList, argList, maxdepth):
+def full_analysis(probeList, program_argument_list, maxdepth):
 	#helper.expression_builder(probeList)
 	#for k,v in Globals.predTable.items():
 	#	print(k,v)
-	#obj = AnalyzeNode_Cond(probeList, argList, maxdepth)
+	#obj = AnalyzeNode_Cond(probeList, program_argument_list, maxdepth)
 	#obj.start()
 	print("\n-----------------------------------")
 	print("Full Analysis Block:\n")
-	res = simplify_with_abstraction(probeList, argList, maxdepth,final=True)
+	res = simplify_with_abstraction(probeList, program_argument_list, maxdepth,final=True)
 	print("-----------------------------------\n")
 	print(res)
 	return res
 
 
-#def ErrorAnalysis(argList):
+#def error_analysis(argList):
 #
 #	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]()
 #	maxdepth = max([max([n[0].depth for n in nodeList])  for nodeList in probeList])
@@ -199,28 +207,45 @@ def mod_probe_list(probeNodeList):
 	#	for dep in v:
 	#		print(k.depth, dep.depth, dep.rec_eval(dep))
 	#print("From here:", [op.rec_eval(op) for op in opList])
-def ErrorAnalysis(argList):
-	abstraction_level = 1
-	# TODO: probeList -> output_variable_predicated_nodes_list
+def error_analysis(program_argument_list):
+	"""
+	Performs Error Analysis of input program including finding worst case error and ranking instability.
+
+	Parameters
+	----------
+	program_argument_list : argparse dictionary
+		Contains parameters to perform tasks in this program.
+
+	Returns
+	-------
+	Nothing
+		The results of the error analysis are logged. Also printed in std-out if --std parameter is present.
+	"""
+	ea1 = time.time()
+
 	# A list of tuple of conditional nodes corresponding to the outputs needed.
 	# Note: Variables may have more than one conditional nodes associated.
-	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
-	# TODO: maxdepth -> max_depth
-	maxdepth = max([max([n[0].depth for n in nodeList]) for nodeList in probeList])
-	print("maxdepth = ", maxdepth)
-	logger.info("Full AST_DEPTH : {ast_depth}".format(ast_depth=maxdepth))
+	output_variable_predicated_node_tuple_list = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in
+												  Globals.outVars]
 
-	# TODO: Resolve the probeList name and call this something else. Same name used for two different purposes.
-	probeList = [nodeList[0][0] for nodeList in probeList]
-	bound_mindepth, bound_maxdepth = argList.mindepth, argList.maxdepth
+	max_depth = max([max([predicated_node[0].depth for predicated_node in predicated_node_tuple]) for predicated_node_tuple
+					in output_variable_predicated_node_tuple_list])
+	# print("Full AST depth = ", max_depth)
+	logger.info("Full AST_DEPTH : {ast_depth}".format(ast_depth=max_depth))
 
+	output_variable_node_list = [predicated_node_tuple[0][0] for predicated_node_tuple in
+								 output_variable_predicated_node_tuple_list]
+	print(output_variable_node_list)
 
-	if ( argList.enable_abstraction ) :
+	bound_min_depth, bound_max_depth = program_argument_list.mindepth, program_argument_list.maxdepth
+
+	if ( program_argument_list.enable_abstraction ) :
+		abstraction_level = 1
 		print("\nAbstraction Enabled... \n")
 		logger.info("\nAbstraction Enabled... \n")
-		print(bound_maxdepth, bound_mindepth, maxdepth)
-		while ( maxdepth >= bound_maxdepth and maxdepth >= bound_mindepth ):
-			[abs_depth, sel_candidate_list] = helper.selectCandidateNodes(maxdepth, bound_mindepth, bound_maxdepth)
+		print(bound_max_depth, bound_min_depth, max_depth)
+		while ( max_depth >= bound_max_depth and max_depth >= bound_min_depth ):
+			[abs_depth, sel_candidate_list] = helper.selectCandidateNodes(max_depth, bound_min_depth, bound_max_depth)
 			print("Candidate List Length:", len(sel_candidate_list))
 			if ( len(sel_candidate_list) > 0):
 				print("-----------------------------------")
@@ -228,40 +253,124 @@ def ErrorAnalysis(argList):
 				logger.info("-----------------------------------")
 				logger.info("ABSTRACTION LEVEL = {abs_level}".format(abs_level=abstraction_level))
 				abstraction_level += 1
-				results = simplify_with_abstraction(sel_candidate_list, argList, maxdepth)
+				results = simplify_with_abstraction(sel_candidate_list, program_argument_list, max_depth)
 				maxopCount = results.get("maxOpCount", 1000)
-				probeList = mod_probe_list([Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars])
-				maxdepth = max([n.depth for n in probeList])
-				if (maxopCount > 1000 and maxdepth > 8 and bound_mindepth > 5):
-					bound_maxdepth = maxdepth if bound_maxdepth > maxdepth else bound_maxdepth - 2 if bound_maxdepth - bound_mindepth > 4 else bound_maxdepth
-					bound_mindepth = bound_mindepth - 2 if bound_maxdepth - bound_mindepth > 4 else bound_mindepth
-				elif maxdepth <= bound_maxdepth and maxdepth > bound_mindepth:
-					bound_maxdepth = maxdepth
-					assert(bound_maxdepth >= bound_mindepth)
+				output_variable_node_list = mod_probe_list([Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars])
+				max_depth = max([n.depth for n in output_variable_node_list])
+				if (maxopCount > 1000 and max_depth > 8 and bound_min_depth > 5):
+					bound_max_depth = max_depth if bound_max_depth > max_depth else bound_max_depth - 2 if bound_max_depth - bound_min_depth > 4 else bound_max_depth
+					bound_min_depth = bound_min_depth - 2 if bound_max_depth - bound_min_depth > 4 else bound_min_depth
+				elif max_depth <= bound_max_depth and max_depth > bound_min_depth:
+					bound_max_depth = max_depth
+					assert(bound_max_depth >= bound_min_depth)
 				print("-----------------------------------\n")
 				logger.info("-----------------------------------\n")
 			else:
 				break
-		return full_analysis(probeList, argList, maxdepth)
+		results = full_analysis(output_variable_node_list, program_argument_list, max_depth)
 	else:
-		return full_analysis(probeList, argList, maxdepth)
+		results = full_analysis(output_variable_node_list, program_argument_list, max_depth)
+
+	ea2 = time.time()
+
+	# ------ Write to File -----------------------------------------
+	helper.writeToFile(results, fout, program_argument_list)
+	fout.close()
+
+	end_exec_time = time.time()
+	full_time = end_exec_time - start_exec_time
+
+	logger.info("Optimizer calls : {num_calls}\n".format(num_calls=Globals.gelpiaID))
+	logger.info("Smt calls : {num_calls}\n".format(num_calls=Globals.solver_calls))
+	logger.info("Parsing time : {parsing_time}\n".format(parsing_time=parse_time))
+	logger.info("PreProcessing time : {preprocess_time}\n".format(preprocess_time=pr2 - pr1))
+	logger.info("Analysis time : {analysis_time}\n".format(analysis_time=ea2 - ea1))
+	logger.info("Full time : {full_time}\n".format(full_time=full_time))
+
+	print("LEVEL_TOP: Optimizer calls : {num_calls}".format(num_calls=Globals.gelpiaID))
+	print("LEVEL_TOP: Smt calls : {num_calls}".format(num_calls=Globals.solver_calls))
+	print("LEVEL_TOP: Parsing time : {parsing_time}".format(parsing_time=parse_time))
+	print("LEVEL_TOP: PreProcessing time : {preprocess_time}".format(preprocess_time=pr2 - pr1))
+	print("LEVEL_TOP: Analysis time : {analysis_time}".format(analysis_time=ea2 - ea1))
+	print("LEVEL_TOP: Full time : {full_time}".format(full_time=full_time))
+
+	print(Globals.argList.stat_err_enable, Globals.argList.stat_err_fraction)
+
+	## --- some extra profiling data
+	# for k,v in Globals.InstabID.items():
+	#	print(type(k), k.f_expression,v)
+	# print("Hello:", Globals.InstabID)
+
+	# print("\n\n")
+
+	# for k, v in Globals.InstabDict.items():
+	#	print(k, v)
+
+	D = list(set([((k[0].exprCond[1], k[1].exprCond[1]), v[0]) for k, v in Globals.InstabDict.items() if
+				  v is not None and v[0] > 0.0]))
+	D.sort(key=lambda tup: -tup[1])
+	print("Printing sorted instability list:")
+	for i in range(len(D)):
+		print("Pred:{pred}\t instab:{instab}".format(pred=D[i][0], instab=D[i][1]))
+
+	D1 = dict()
+	for k, v in Globals.InstabDict.items():
+		if v is not None and v[0] > 0.0:
+			KEY = (k[0].exprCond[1], k[1].exprCond[1])
+			entry = D1.get(KEY, [])
+			entry.append([v[0], (k[0].exprCond[0], k[1].exprCond[0], k)])
+			D1[KEY] = entry
+
+	for k, v in D1.items():
+		D1[k].sort(key=lambda tup: -tup[0])
+
+	# D = [(instab, (expr1, expr2), pred),...]
+	D = [(v[0][0], v[0][1], k) for k, v in D1.items()]
+	D.sort(key=lambda tup: -tup[0])
+	print("Printing sorted instability list:")
+	for i in range(len(D)):
+		print("Pred:{pred}\t instab:{instab}".format(pred=D[i][2], instab=D[i][0]))
 
 
+# Form a list of output nodes
+#
+#
+def examine_stability():
+	"""
+	Examines the stability of the input program
+
+	Parameters
+	----------
+	None
+
+	Returns
+	-------
+	Nothing
+		Results of examination are logged. Also printed on std-out if --std parameter is present.
+	"""
+	print("Started examining stability...")
+
+	output_variable_node_list = [predicated_node_tuple[0][0] for predicated_node_tuple in
+								 [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]]
+
+
+	print("Completed examining stability...")
+	return
 
 
 if __name__ == "__main__":
 	start_exec_time	= time.time()
-	argList = parseArguments()
-	Globals.argList = argList
-	Globals.enable_constr = argList.enable_constr
+	program_argument_list = parseArguments()
+	Globals.argList = program_argument_list
+	Globals.enable_constr = program_argument_list.enable_constr
 	sys.setrecursionlimit(10**6)
-	print("LEVEL_TOP: Parsed argList = ", argList)
-	text = open(argList.file, 'r').read()
-	fout = open(argList.outfile, 'w')
+	print("LEVEL_TOP: Parsed program_argument_list = ", program_argument_list)
+	text = open(program_argument_list.file, 'r').read()
+	fout = open(program_argument_list.outfile, 'w')
 
 
 	#--------- Setup Logger ------------------------------------
-	logging.basicConfig(filename=argList.logfile,
+	logging.basicConfig(filename=program_argument_list.logfile,
 					level = logging.INFO,
 					filemode = 'w')
 	logger = logging.getLogger()
@@ -269,7 +378,7 @@ if __name__ == "__main__":
 	##-------- Check if realpaver is available -----------------
 	Globals.ROOT_DIR = os.getenv("SAT_ROOT")
 	assert ( os.path.isdir(Globals.ROOT_DIR) )
-	if argList.realpaver:
+	if program_argument_list.realpaver:
 		Globals.LIBFILE = Globals.ROOT_DIR+"/RL1/build/"+"libsatrp.so"
 		assert ( os.path.isfile(Globals.LIBFILE) )
 
@@ -306,67 +415,16 @@ if __name__ == "__main__":
 
 
 	#------ Main Analysis ----------------------------------------
-	ea1 = time.time()
-	results = ErrorAnalysis(argList)
+
+	if program_argument_list.examine_stability:
+		examine_stability()
+	elif program_argument_list.error_analysis:
+		error_analysis(program_argument_list)
+	else:
+		print("Invalid Input")
 	ea2 = time.time()
 
 
-	#------ Write to File -----------------------------------------
-	helper.writeToFile(results, fout, argList)
-	fout.close()
 
-	end_exec_time = time.time()
-	full_time = end_exec_time - start_exec_time
-
-	logger.info("Optimizer calls : {num_calls}\n".format(num_calls = Globals.gelpiaID))
-	logger.info("Smt calls : {num_calls}\n".format(num_calls = Globals.solver_calls))
-	logger.info("Parsing time : {parsing_time}\n".format(parsing_time = parse_time))
-	logger.info("PreProcessing time : {preprocess_time}\n".format(preprocess_time = pr2-pr1))
-	logger.info("Analysis time : {analysis_time}\n".format(analysis_time = ea2-ea1))
-	logger.info("Full time : {full_time}\n".format(full_time = full_time))
-
-	print("LEVEL_TOP: Optimizer calls : {num_calls}".format(num_calls = Globals.gelpiaID))
-	print("LEVEL_TOP: Smt calls : {num_calls}".format(num_calls = Globals.solver_calls))
-	print("LEVEL_TOP: Parsing time : {parsing_time}".format(parsing_time = parse_time))
-	print("LEVEL_TOP: PreProcessing time : {preprocess_time}".format(preprocess_time = pr2-pr1))
-	print("LEVEL_TOP: Analysis time : {analysis_time}".format(analysis_time = ea2-ea1))
-	print("LEVEL_TOP: Full time : {full_time}".format(full_time = full_time))
-
-	print(Globals.argList.stat_err_enable, Globals.argList.stat_err_fraction)
-
-	## --- some extra profiling data
-	#for k,v in Globals.InstabID.items():
-	#	print(type(k), k.f_expression,v)
-	#print("Hello:", Globals.InstabID)
-
-	#print("\n\n")
-
-	#for k, v in Globals.InstabDict.items():
-	#	print(k, v)
-
-	D = list(set([(( k[0].exprCond[1], k[1].exprCond[1]),v[0]) for k,v in Globals.InstabDict.items() if v is not None and v[0] > 0.0]))
-	D.sort(key=lambda tup: -tup[1])
-	print("Printing sorted instability list:")
-	for i in range(len(D)):
-		print("Pred:{pred}\t instab:{instab}".format(pred=D[i][0], instab=D[i][1]))
-
-
-	D1 = dict()
-	for k,v in Globals.InstabDict.items():
-		if v is not None and v[0] > 0.0:
-			KEY = ( k[0].exprCond[1], k[1].exprCond[1])
-			entry = D1.get(KEY, [])
-			entry.append([v[0], (k[0].exprCond[0], k[1].exprCond[0], k)])
-			D1[KEY] = entry
-
-	for k,v in D1.items():
-		D1[k].sort(key=lambda tup: -tup[0])
-
-	# D = [(instab, (expr1, expr2), pred),...]
-	D = [ (v[0][0], v[0][1], k) for k,v in D1.items() ]
-	D.sort(key=lambda tup: -tup[0])
-	print("Printing sorted instability list:")
-	for i in range(len(D)):
-		print("Pred:{pred}\t instab:{instab}".format(pred=D[i][2], instab=D[i][0]))
 
 

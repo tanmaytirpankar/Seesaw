@@ -151,7 +151,7 @@ _atomic_condition_ops = {
 			ASIN	:	[lambda operand_list : operand_list[0] /
 											   (((SymTup((Sym(1.0,Globals.__T__),))-operand_list[0]).__sqrt__()) -
 												operand_list[0].__asin__())],
-			COS		:	[lambda operand_list : (operand_list[0] * operand_list[0].__sin__() / operand_list[0].__cos__()).__abs__()],
+			COS		:	[lambda operand_list : (operand_list[0] * operand_list[0].__tan__()).__abs__()],
 			TAN		:	[lambda operand_list : (operand_list[0] / (operand_list[0].__sin__() * operand_list[0].__cos__())).__abs__()]
 }
 

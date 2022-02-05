@@ -95,7 +95,7 @@ class AST(object):
 		for i in range(len(self.parents)):
 			parent_str = parent_str + self.parents[i].token.value + ","
 		parent_str = parent_str + ")"
-		repr_str = '\n\tdepth:' + repr(self.depth) \
+		repr_str = '\tdepth:' + repr(self.depth) \
 			+ '\n\tparents:' + parent_str \
 			+ '\n\tnoise:' + repr(self.noise) \
 			+ '\n\trnd:' + repr(self.rnd)
@@ -190,7 +190,7 @@ class Num(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nNum{' + '\n\ttoken:' + repr(self.token) + super().__repr__() + '\n}'
+		repr_str = 'Num{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() + '\n}\n'
 		return repr_str
 
 	@staticmethod
@@ -254,7 +254,7 @@ class FreeVar(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nFreeVar{' + '\n\ttoken:' + repr(self.token) + super().__repr__() + '\n}'
+		repr_str = 'FreeVar{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() + '\n}\n'
 		return repr_str
 
 	@staticmethod
@@ -354,7 +354,7 @@ class Var(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nVar{' + '\n\ttoken:' + repr(self.token) + super().__repr__() + '\n}'
+		repr_str = 'Var{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() + '\n}\n'
 		return repr_str
 
 	@staticmethod
@@ -409,7 +409,7 @@ class LiftOp(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nLiftOp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() + '\n}'
+		repr_str = 'LiftOp{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() + '\n}\n'
 		return repr_str
 
 
@@ -467,9 +467,9 @@ class TransOp(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nTransOp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
+		repr_str = 'TransOp{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() \
 				   + '\n\tchildren:' + repr(self.children[0].token.value) \
-				   + '\n}'
+				   + '\n}\n'
 		return repr_str
 
 	@staticmethod
@@ -557,10 +557,10 @@ class BinOp(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nBinOp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
+		repr_str = 'BinOp{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() \
 				   + '\n\tleft child:' + repr(self.children[0].token.value) \
 				   + '\n\tright child:' + repr(self.children[1].token.value) \
-				   + '\n}'
+				   + '\n}\n'
 		return repr_str
 
 	@staticmethod
@@ -649,10 +649,10 @@ class BinLiteral(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nBinLiteral{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
+		repr_str = 'BinLiteral{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() \
 				   + '\n\tleft child:' + repr(self.children[0].token.value) \
 				   + '\n\tright child:' + repr(self.children[1].token.value) \
-				   + '\n}'
+				   + '\n}\n'
 		return repr_str
 
 		#self.f_expression = self.eval(self)
@@ -757,10 +757,10 @@ class ExprComp(AST):
 		repr_str : str
 			String representation of the class.
 		"""
-		repr_str = '\nExprComp{' + '\n\ttoken:' + repr(self.token) + super().__repr__() \
+		repr_str = 'ExprComp{' + '\n\ttoken:' + repr(self.token) + "\n" + super().__repr__() \
 				   + '\n\tleft child:' + repr(self.children[0].token.value) \
 				   + '\n\tright child:' + repr(self.children[1].token.value) \
-				   + '\n}'
+				   + '\n}\n'
 		return repr_str
 
 	@staticmethod

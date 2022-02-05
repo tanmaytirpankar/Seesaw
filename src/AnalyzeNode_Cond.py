@@ -204,9 +204,17 @@ class AnalyzeNode_Cond(object):
 						sti = time.time()
 
 						# Print statements for debugging
-						# print("Child Node Backward derivative")
+						# print("Output Variable")
+						# print(outVar)
+						# print("Node")
+						# print(node)
+						# print("Child Node")
+						# print(child_node)
+						# print("Child Node: Backward derivative Before:")
 						# print(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))))
-						# print(self.atomic_condition_numbers[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))))
+						# if self.use_atomic_conditions:
+						# 	print("Child Node: Atomic Condition Number Before:")
+						# 	print(self.atomic_condition_numbers[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))))
 
 						# ps/pu = product for all i (ps/pw_i)*(pw_i/pu)
 						self.bwdDeriv[child_node][outVar] = self.condmerge(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
@@ -215,34 +223,22 @@ class AnalyzeNode_Cond(object):
 								 if utils.isConst(child_node) else \
 								 DerivFunc[i](opList)), trim=True))
 
-						# Print statements for debugging
-						# print("OutVar")
-						# print(outVar)
-						# print("Node")
-						# print(node)
-						# print("Child Node")
-						# print(child_node)
-						# print("Node backward Derivative")
-						# print(self.bwdDeriv[node][outVar])
-						# print(self.atomic_condition_numbers[node][outVar])
-
-						# print("Derivs")
-						# print(self.bwdDeriv[child_node][outVar])
-
-
 						if self.use_atomic_conditions:
 							self.atomic_condition_numbers[child_node][outVar] = self.condmerge(self.atomic_condition_numbers[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
 								self.atomic_condition_numbers[node][outVar] * \
 								(SymTup((Sym(0.0, Globals.__T__),)) \
 								 if utils.isConst(child_node) else \
 								 AtomicFunc[i](opList)), trim=True))
-						# print(self.atomic_condition_numbers[child_node][outVar])
-						# print(self.atomic_condition_numbers[child_node])
-						# print("ATomic Conditions")
-						# print(self.bwdDeriv)
-						# for v1 in self.bwdDeriv.values():
-						# 	for v2 in v1.values():
-						# 		print(v1)
+
+						# Print statements for debugging
+
+						# print("Child Node: Backward derivative After:")
+						# print(self.bwdDeriv[child_node][outVar])
+						# if self.use_atomic_conditions:
+						# 	print("Child Node: Atomic Condition Number After:")
+						# 	print(self.atomic_condition_numbers[child_node][outVar])
+
+
 						eti = time.time()
 						#print("One bak prop time = ", eti-sti)
 					self.next_workList.append(child_node)
@@ -437,14 +433,19 @@ class AnalyzeNode_Cond(object):
 																node.get_rounding())).__abs__()
 
 			# Print Statements to debug
-			# print("OutVar")
+			# print("Output Variable")
 			# print(outVar)
 			# print("Node")
 			# print(node)
-			# print("Atomic Condition")
-			# print(self.atomic_condition_numbers[node][outVar])
+			# print("Backward Derivative")
+			# print(self.bwdDeriv[node][outVar])
 			# print("Err Expression")
-			# print(error_expr_atomic_conditioned)
+			# print(expr_solve)
+			# if self.use_atomic_conditions:
+			# 	print("Atomic Condition")
+			# 	print(self.atomic_condition_numbers[node][outVar])
+			# 	print("Err Expression")
+			# 	print(error_expr_atomic_conditioned)
 
 			acc = self.Accumulator.get(outVar, SymTup((Sym(0.0, Globals.__T__),)))
 			if self.use_atomic_conditions:

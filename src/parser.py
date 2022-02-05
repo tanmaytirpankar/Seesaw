@@ -83,7 +83,7 @@ class Sparser(object):
 
 	def create_new_scope(self, adjacency='serial', cond=Globals.__T__):
 		Globals.scopeID += 1
-		print("Scope creation: ID = ", Globals.scopeID)
+		# print("Scope creation: ID = ", Globals.scopeID)
 		#item = None if len(self.scopeStack)<=0 else self.scopeStack.pop()
 		if(adjacency == 'parallel'):
 			_caller_ = self.current_symtab._symTab['_caller_']
@@ -577,7 +577,6 @@ class Sparser(object):
 		"""
 		program : parse_input parse_output parse_constraints parse_exec
 		"""
-		print("Inside Program")
 		## Create symbolTable in the Global scope right here
 		self.create_new_scope(adjacency='serial')
 		##
@@ -587,9 +586,11 @@ class Sparser(object):
 		self.parse_exec()
 
 	def parse(self, text):
+		print("Started Parsing Program...")
 		self.lexer.create_token_generator(text)
 		self.current_token = self.lexer.get_next_token()#current_token()
 		self.program()
+		print("Completed Parsing Program...")
 		#print(self.current_symtab._symTab.keys())
 		#print(self.current_symtab._scope)
 		#print(self.current_symtab._scopeCond)

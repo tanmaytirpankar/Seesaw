@@ -114,7 +114,7 @@ class TestNodes:
         assert test_node.cond == Globals.__F__
         assert test_node.derived_token == FLOAT
         assert isinstance(test_node.token, CToken)
-        assert test_node.token.value is None
+        assert test_node.token.value is ""
 
     def test_transcendental_operation(self):
         lexer = Slex()
