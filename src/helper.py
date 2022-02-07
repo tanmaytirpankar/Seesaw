@@ -69,26 +69,62 @@ def parse_cond(cond):
 		return tcond
 	return tcond
 
-# Builds expression for each node in the "node" subtree of the AST.
-def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, cond, etype, ctype, inv=False):
 
+# Builds expression for each node in the "node" subtree of the AST.
+def build_expression_at_node(node, reachable, parent_dict, free_syms, cond_syms, cond, etype, ctype, inv=False):
+	"""
+	Builds expression for each node in the "node" subtree of the AST.
+	Also builds the parent_dict, free_syms, cond_syms sets and reachable dict.
+
+	Parameters
+	----------
+	node : node type
+		Any node.
+	reachable : defaultdict(set)
+		Dictionary of depth(int) -> set(nodes)
+	parent_dict : defaultdict(list)
+		Dictionary of node -> [parents]
+	free_syms : set
+		Accumulated Set of symbolic variables from all ExprComp nodes.
+	cond_syms : set
+		Accumulated Set of symbolic variables from all Conditionals in Sym structures.
+	etype : bool
+		Flag to include error in conditional when generating expressions for conditionals
+	ctype : bool
+		Flag to retrieve conditional and free symbols when handling conditionals. We get free symbols out of this function
+		if this flag is set.
+	inv : ?
+
+	Returns
+	-------
+	free_syms : set
+		Accumulated Set of symbolic variables from all ExprComp nodes.
+	cond_syms : set
+		Accumulated Set of symbolic variables from all Conditionals in Sym structures.
+	"""
 	# Recursive call to build expressions for the subtrees of "node"
 	for child in node.children:
 		if not reachable[child.depth].__contains__(child):
-			(free_syms, cond_syms) = dfs_expression_builder(child, reachable, parent_dict, free_syms, cond_syms, cond, etype, ctype, inv)
+			(free_syms, cond_syms) = build_expression_at_node(child, reachable, parent_dict, free_syms, cond_syms, cond, etype, ctype, inv)
 
 		parent_dict[child].append(node)
 
 	# Expression building for ExprComp nodes
 	if type(node).__name__ == "ExprComp":
 		print("ExprComp line:", node.token.lineno)
+
+		# etype flag determines whether to include error when building expressions for conditionals.
 		if etype:
 			print("HIDDEN CONDITIONAL DEPTH:", node.children[0].depth, node.children[1].depth)
 			res0 = ANC([node.children[0]], [], node.children[0].depth, Globals.argList.use_atomic_conditions, Globals.argList.realpaver).start()
 			res1 = ANC([node.children[1]], [], node.children[1].depth, Globals.argList.use_atomic_conditions, Globals.argList.realpaver).start()
-		## an exprComp node as a modified evaluation ops to include extra error terms
+
+			# An ExprComp node has modified evaluation function to include the extra error terms
+			# The ExprComp node adds the above calculated concretized error to the conditional expression.
 			(fexpr,fsyms) = node.mod_eval(node, inv, res0[node.children[0]]["ERR"]*pow(2,-53), \
 								   res1[node.children[1]]["ERR"]*pow(2,-53) )
+
+			# TODO: What does this print statement mean? Why did Arnab say this?
 			print("Never ever error")
 		else:
 			(fexpr,fsyms) = node.mod_eval(node, inv, 0.0, 0.0)
@@ -99,14 +135,18 @@ def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, c
 
 	node.set_expression(fexpr)
 	#print("FEXPRESSION TYPE = ", type(node.f_expression).__name__)
-	# TODO: Figure out what this if block is for by using printing csymSet.
+	# Symbols in the predicate part of SymTup are added to cond_syms set.
+	# New symbols are added on encountering a new predicate on entering an "if then else" block.
 	if type(node.f_expression).__name__ == "SymTup":
 		csymSet = reduce(lambda x,y: x.union(y), \
-						[el.exprCond[1].free_symbols for el in node.f_expression if el.exprCond[1] not in (True,False)], \
-						set())
+						[el.exprCond[1].free_symbols for el in node.f_expression if el.exprCond[1] not in (True, False)],
+						 set())
 		cond_syms = cond_syms.union(csymSet)
+
+	# Adding node to the reachable dictionary.
 	reachable[node.depth].add(node)
-	return (free_syms, cond_syms)
+
+	return free_syms, cond_syms
 
 
 	#print(node.depth, type(node).__name__, node.cond)
@@ -118,21 +158,47 @@ def dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, c
 	#reachable[node.depth].add(node)
 
 
-# Builds expressions for all nodes in probeList and returns?
-def expression_builder(probeList, etype=False, ctype=False, inv=False):
+# Starts building expressions for all nodes in candidate_list
+def expression_builder_driver(candidate_list, etype=False, ctype=False, inv=False):
+	"""
+	Driver function for building expressions at all nodes in subtree starting with given root nodes in candidate_list.
+
+	Parameters
+	----------
+	candidate_list : list
+		List of nodes in the AST representing some expressions.
+	# TODO: See if etype parameter is needed at all. Why is it needed in expression building?
+	etype : bool
+		Flag to include error in conditional when generating expressions for conditionals
+	ctype : bool
+		Flag to retrieve conditional and free symbols when handling conditionals. We get free symbols out of this function
+		if this flag is set.
+	inv : ?
+
+	Returns
+	-------
+	free_syms : set
+		Accumulated Set of symbolic variables from all ExprComp nodes.
+	cond_syms : set
+		Accumulated Set of symbolic variables from all Conditionals in Sym structures.
+	parent_dict : defaultdict(list)
+		Dictionary of node -> [parents]
+	"""
 
 	parent_dict = defaultdict(list)
 	reachable = defaultdict(set)
 	free_syms = set()
 	cond_syms = set()
-	print("Begin enter")
+	if ctype:
+		print("Beginning building expressions for conditionals...")
+	else:
+		print("Beginning building expressions...")
 
-	# For each node, build the complete expression within the node itself and return free_syms and cond_syms
-	# TODO: What are free_syms and cond_syms?
-	for node in probeList:
+	# For each node, build the complete expression within the node itself and accumulate free_syms and cond_syms
+	for node in candidate_list:
 		if not reachable[node.depth].__contains__(node):
 			print(node.depth)
-			(free_syms, cond_syms) = dfs_expression_builder(node, reachable, parent_dict, free_syms, cond_syms, cond=Globals.__T__,etype=etype, ctype=ctype, inv=inv)
+			(free_syms, cond_syms) = build_expression_at_node(node, reachable, parent_dict, free_syms, cond_syms, cond=Globals.__T__,etype=etype, ctype=ctype, inv=inv)
 
 		#print(node.f_expression)
 		#print("From expression builder: Root node stats -> opcount={opcount}, depth={depth}".format(opcount=0 if type(node).__name__ not in ('TransOp', 'BinOp') else node.f_expression.__countops__(), depth=node.depth))
@@ -141,33 +207,50 @@ def expression_builder(probeList, etype=False, ctype=False, inv=False):
 
 	del reachable
 
-	#print("Inside expression builder :", cond_syms)
-	
-	print("Begin exit")
 	if ctype:
-		return (free_syms, cond_syms)
+		print("Completed building expressions for conditionals...")
 	else:
-		#for k,v in Globals.global_symbol_table[0]._symTab.items():
-		#	print("\n*******Symbol Name:", k)
-		#	for vi in v:
-		#		print(vi[0].f_expression)
-		return (parent_dict, cond_syms)
+		print("Completed building expressions...")
+	if ctype:
+		return free_syms, cond_syms
+	else:
+		return parent_dict, cond_syms
 
-# TODO: Give a neutral name to probeNodeList parameter.
-# Builds a conditional string from all nodes in probeNodeList.
-#etype = to analyze error within the conditional expressions
-#ctype = free_syms + cond_syms ( specifically used when handling conditonals to retrieve conditional symbols )
+
+# TODO: Figure out what inv is from the definition Arnab wrote here.
+# Builds a conditional string from all nodes in conditional_node_list.
 # inv  = To generate delta inverse that includes the grey-zone
-def handleConditionals(probeNodeList, etype=True, inv=False):
+def handleConditionals(conditional_node_list, etype=True, inv=False):
+	"""
+	Generates expressions corresponding to the conditional nodes in conditional_node_list.
+	Builds a conditional string from the generated expressions.
+
+	Parameters
+	----------
+	conditional_node_list : list
+		List of conditional nodes. Conditional nodes can be external constraints or if-then-else conditionals.
+	etype : bool
+		Flag to include error in conditional when generating expressions for conditionals
+	inv : ?
+
+	Returns
+	-------
+	cstr : str
+		Conditional string to be used for the optimizer.
+	fsyms : set
+		Accumulated Set of symbolic variables from all ExprComp nodes.
+	csyms : set
+		Accumulated Set of symbolic variables from all Conditionals in Sym structures.
+	"""
 	print("Building conditional expressions...\n")
 	logger.info("Building conditional expressions...\n")
-	(fsyms, csyms) = expression_builder(probeNodeList, etype, ctype=True, inv=inv)
+	(fsyms, csyms) = expression_builder_driver(conditional_node_list, etype, ctype=True, inv=inv)
 
 	# Builds a
-	cstr = " & ".join([str(probeNode.f_expression) for probeNode in probeNodeList])
-	print("Debug-check:", (cstr,fsyms, csyms))
-	#return (" & ".join([str(probeNode.f_expression) for probeNode in probeNodeList]),fsyms, csyms)
-	return (cstr,fsyms, csyms)
+	cstr = " & ".join([str(conditional_node.f_expression) for conditional_node in conditional_node_list])
+	print("Debug-check:", (cstr, fsyms, csyms))
+	#return (" & ".join([str(conditional_node.f_expression) for conditional_node in conditional_node_list]),fsyms, csyms)
+	return cstr, fsyms, csyms
 
 def pretraverse(node, reachable):
 	
@@ -190,11 +273,11 @@ def PreProcessAST():
 	print("\n------------------------------")
 	print("PreProcessing Block:")
 
-	probeList = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
+	candidate_list = [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]
 	reachable = defaultdict(set)
 
 
-	for nodeList in probeList:
+	for nodeList in candidate_list:
 		assert(len(nodeList)==1)
 		[node,cond] = nodeList[0]
 		if not reachable[node.depth].__contains__(node):

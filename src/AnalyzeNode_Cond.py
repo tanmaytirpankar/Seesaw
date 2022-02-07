@@ -75,7 +75,7 @@ class AnalyzeNode_Cond(object):
 		self.paving = paving
 		self.maxdepth = maxdepth
 		self.numBoxes = 10
-		(self.parent_dict, self.cond_syms) = helper.expression_builder(probeNodeList)
+		(self.parent_dict, self.cond_syms) = helper.expression_builder_driver(probeNodeList)
 		#print("ROOT EXPRESSION SIZE:", [node.f_expression.__countops__() for node in probeNodeList])
 		#print("Expression builder condsyms:", self.cond_syms)
 
@@ -880,7 +880,7 @@ class AnalyzeNode_Cond(object):
 			Globals.inputVars[name] = {"INTV" : res["INTV"]}
 			Globals.global_symbol_table[0]._symTab[name] = ((node, Globals.__T__),)
 
-	# TODO: There is another simplify_with_abstraction method in satire+.py. Check if one of these can be eliminated.
+	# TODO: There is another simplify_with_abstraction method in seesaw.py. Check if one of these can be eliminated.
 	def simplify_with_abstraction(self, sel_candidate_list, argList, MaxDepth, bound_min, bound_max):
 		Globals.condExprBank.clear()
 		obj = AnalyzeNode_Cond(sel_candidate_list, self.argList, MaxDepth, use_atomic_conditions=Globals.argList.use_atomic_conditions, paving=Globals.argList.realpaver)
@@ -939,7 +939,7 @@ class AnalyzeNode_Cond(object):
 		if MaxDepth==0 :
 			return self.default_res()
 		# TODO: Expressions have been built on AnalyzeCond initialization. Why build multiple times? Is trimList different from probeList?
-		(self.parent_dict, self.cond_syms) = helper.expression_builder(self.trimList)
+		(self.parent_dict, self.cond_syms) = helper.expression_builder_driver(self.trimList)
 		self.__setup_condexpr__()
 		self.__init_workStack__()
 		self.__setup_outputs__()

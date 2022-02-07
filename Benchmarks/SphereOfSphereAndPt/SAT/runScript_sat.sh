@@ -14,7 +14,7 @@ testname="SphereOfSphereAndPt.txt"
 
 # Different run configurations
 # Confiig : Basic Solver - instability
-python3 ../../../src/satire+.py  \
+python3 ../../../src/seesaw.py  \
         --std \
 		--file ${testname} \
 		--enable-abstraction --mindepth 10 --maxdepth 20 \
@@ -22,7 +22,7 @@ python3 ../../../src/satire+.py  \
 		--outfile basic.out
 
 # Confiig : Basic Solver - instability + realpaver
-python3 ../../../src/satire+.py  \
+python3 ../../../src/seesaw.py  \
         --std \
 		--file ${testname} \
 		--enable-abstraction --mindepth 10 --maxdepth 20 \
@@ -32,7 +32,7 @@ python3 ../../../src/satire+.py  \
 
 
 # Confiig : Basic Solver + instability
-python3 ../../../src/satire+.py  \
+python3 ../../../src/seesaw.py  \
         --std \
         --report-instability \
 		--file ${testname} \
@@ -42,7 +42,7 @@ python3 ../../../src/satire+.py  \
 
 
 # Confiig : Basic Solver + instability + realpaver
-python3 ../../../src/satire+.py  \
+python3 ../../../src/seesaw.py  \
         --std \
         --report-instability \
 		--file ${testname} \
@@ -59,7 +59,7 @@ python3 ../../../src/satire+.py  \
 #--  ##
 #--  ##---------------------------------------------------------
 #--  # Confiig : Constrained Solver + instability
-#--  python3 ../../../src/satire+.py  \
+#--  python3 ../../../src/seesaw.py  \
 #--          --std \
 #--  		--file ${testname} \
 #--  		--enable-abstraction --mindepth 10 --maxdepth 20 \
@@ -69,7 +69,7 @@ python3 ../../../src/satire+.py  \
 #--  		--outfile Z3_Constrained.out
 #--  
 #--  #-- # Confiig : Constrained Solver + instability + realpaver
-#--  #-- python3 ../../../src/satire+.py  \
+#--  #-- python3 ../../../src/seesaw.py  \
 #--  #--         --std \
 #--  #-- 		--file ${testname} \
 #--  #-- 		--enable-abstraction --mindepth 10 --maxdepth 20 \
@@ -81,7 +81,7 @@ python3 ../../../src/satire+.py  \
 #--  
 #--  
 #--  # Confiig : Constrained Solver + instability
-#--  python3 ../../../src/satire+.py  \
+#--  python3 ../../../src/seesaw.py  \
 #--          --std \
 #--          --report-instability \
 #--  		--file ${testname} \
@@ -93,7 +93,7 @@ python3 ../../../src/satire+.py  \
 #--  
 #--  
 #--  #-- # Confiig : Constrained Solver + instability + realpaver
-#--  #-- python3 ../../../src/satire+.py  \
+#--  #-- python3 ../../../src/seesaw.py  \
 #--  #--         --std \
 #--  #--         --report-instability \
 #--  #-- 		--file ${testname} \
@@ -113,7 +113,7 @@ python3 ../../../src/satire+.py  \
 #--  ##---------------------------------------------------------
 #--  
 #--  # Confiig : Constrained Solver + instability
-#--  python3 ../../../src/satire+.py  \
+#--  python3 ../../../src/seesaw.py  \
 #--          --std \
 #--  		--file ${testname} \
 #--  		--enable-abstraction --mindepth 10 --maxdepth 20 \
@@ -122,7 +122,7 @@ python3 ../../../src/satire+.py  \
 #--  		--outfile Constrained.out
 #--  
 #--  #-- # Confiig : Constrained Solver + instability + realpaver
-#--  #-- python3 ../../../src/satire+.py  \
+#--  #-- python3 ../../../src/seesaw.py  \
 #--  #--         --std \
 #--  #-- 		--file ${testname} \
 #--  #-- 		--enable-abstraction --mindepth 10 --maxdepth 20 \
@@ -133,7 +133,7 @@ python3 ../../../src/satire+.py  \
 #--  
 #--  
 #--  # Confiig : Constrained Solver + instability
-#--  python3 ../../../src/satire+.py  \
+#--  python3 ../../../src/seesaw.py  \
 #--          --std \
 #--          --report-instability \
 #--  		--file ${testname} \
@@ -144,7 +144,7 @@ python3 ../../../src/satire+.py  \
 #--  
 
 #-- # Confiig : Constrained Solver + instability + realpaver
-#-- python3 ../../../src/satire+.py  \
+#-- python3 ../../../src/seesaw.py  \
 #--         --std \
 #--         --report-instability \
 #-- 		--file ${testname} \

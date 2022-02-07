@@ -1,0 +1,14 @@
+INPUTS {
+	x fl64 : (1.0e-7, 1.0e-7);
+}
+
+OUTPUTS {
+	v4 ;
+}
+
+EXPRS {
+	v1 rnd64 = cos(x);
+	v2 rnd64 = 1.0-v1;
+	v3 rnd64 = x*x;
+	v4 rnd64 = v2/v3;
+}

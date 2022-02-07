@@ -15,7 +15,7 @@ from flask_restful import Resource, Api, reqparse
 app = Flask(__name__)
 api = Api(app)
 
-SEESAW_SRC_PATH = "../satire+.py"
+SEESAW_SRC_PATH = "../seesaw.py"
 SEESAW_PROGRAM_PATH = "web_interface_programs/ex1"
 
 

@@ -40,7 +40,7 @@ class AnalyzeNode_Cond(object):
 		self.trimList = probeNodeList
 		self.argList = argList
 		self.maxdepth = maxdepth
-		self.parent_dict = helper.expression_builder(probeNodeList)
+		self.parent_dict = helper.expression_builder_driver(probeNodeList)
 
 	def __setup_outputs__(self):
 		for node in self.trimList:

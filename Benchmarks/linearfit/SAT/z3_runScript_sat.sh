@@ -7,7 +7,7 @@ testname="linearfit.txt"
 ##
 ##---------------------------------------------------------
 # Confiig : Constrained Solver + instability
-python3 ../../../src/satire+.py  \
+python3 ../../../src/seesaw.py  \
         --std \
 		--file ${testname} \
 		--enable-constr \
@@ -16,7 +16,7 @@ python3 ../../../src/satire+.py  \
 		--outfile Z3_Constrained.out
 
 # Confiig : Constrained Solver + instability
-python3 ../../../src/satire+.py  \
+python3 ../../../src/seesaw.py  \
         --std \
         --report-instability \
 		--file ${testname} \

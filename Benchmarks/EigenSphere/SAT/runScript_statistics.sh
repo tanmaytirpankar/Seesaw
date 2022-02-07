@@ -4,7 +4,7 @@ testname="EigenSphere.txt"
 for frac in 0.0 0.5 0.8 
 do
 
-	python3 ../../../src/satire+.py \
+	python3 ../../../src/seesaw.py \
 			--std \
 			--file ${testname} \
 			--enable-abstraction \
@@ -16,7 +16,7 @@ do
 			--logfile stat_basic_F${frac}.log \
 			--outfile stat_basic_F${frac}.out 
 
-	python3 ../../../src/satire+.py \
+	python3 ../../../src/seesaw.py \
 			--std \
 			--file ${testname} \
 			--enable-abstraction \

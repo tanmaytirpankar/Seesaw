@@ -5,8 +5,6 @@ import time
 import argparse
 import symengine as seng
 
-import Globals
-from gtokens import *
 from lexer import Slex
 from parser import Sparser
 
@@ -16,10 +14,23 @@ from ASTtypes import *
 
 import helper
 from AnalyzeNode_Cond import AnalyzeNode_Cond
+from StabilityAnalysis import StabilityAnalysis
 
 import logging
 
-def parseArguments():
+def create_parser():
+	"""
+	Creates a command line parser for Seesaw
+
+	Parameters
+	----------
+	None
+
+	Returns
+	-------
+	parser : argparse.ArgumentParser
+		ArgumentParser object
+	"""
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--file', help='Test file name', required=True)
 	parser.add_argument('--parallel', help='Enable parallel optimizer queries:use for large ASTs',\
@@ -46,7 +57,7 @@ def parseArguments():
 	parser.add_argument('--sound', help='Turn on analysis for higher order errors', default=False, action='store_true')
 	parser.add_argument('--compress', help='Perform signature matching to reduce optimizer calls using hashing and md5 signature', default=False, action='store_true')
 	parser.add_argument('--force', help='Sideline additional tricks used for non-linear examples. Use this option for linear examples', default=False, action='store_true')
-	parser.add_argument('--realpaver', help='Enable realpaver guided subdivision inside satire+', default=False, action='store_true')
+	parser.add_argument('--realpaver', help='Enable realpaver guided subdivision inside seesaw', default=False, action='store_true')
 	parser.add_argument('--enable-constr', help='Enable solving constrained optimization queries', default=False, action='store_true')
 	parser.add_argument('--stat-err-enable', help='Enable statistical error sampling', default=False, action='store_true')
 	parser.add_argument('--stat-err-fraction', help='Fractional bound for using statistical error. Default is 0.5',\
@@ -67,8 +78,7 @@ def parseArguments():
 						default=False,
 						action='store_true')
 
-	result = parser.parse_args()
-	return result
+	return parser
 
 
 def rebuildASTNode(node, completed):
@@ -162,7 +172,7 @@ def simplify_with_abstraction(sel_candidate_list, program_argument_list, maxdept
 
 # Performs error analysis on nodes in the probeList and returns the "result" dictionary
 def full_analysis(probeList, program_argument_list, maxdepth):
-	#helper.expression_builder(probeList)
+	#helper.expression_builder_driver(probeList)
 	#for k,v in Globals.predTable.items():
 	#	print(k,v)
 	#obj = AnalyzeNode_Cond(probeList, program_argument_list, maxdepth)
@@ -207,7 +217,7 @@ def mod_probe_list(probeNodeList):
 	#	for dep in v:
 	#		print(k.depth, dep.depth, dep.rec_eval(dep))
 	#print("From here:", [op.rec_eval(op) for op in opList])
-def error_analysis(program_argument_list):
+def perform_error_analysis(program_argument_list):
 	"""
 	Performs Error Analysis of input program including finding worst case error and ranking instability.
 
@@ -332,10 +342,38 @@ def error_analysis(program_argument_list):
 		print("Pred:{pred}\t instab:{instab}".format(pred=D[i][2], instab=D[i][0]))
 
 
+# Algorithm to find high condition number causing input intervals
 # Form a list of output nodes
+# For each node in the AST of the output node, 
+# 	generate expressions
+# Starting from the bottom up for each node,
+# 	generate atomic condition expression
+#	Search for narrowest input intervals (For now assume narrowest means an interval of 1.0) giving a high atomic 
+#	condition number by subdividing input intervals in some combination.
+#	Strategy to find intervals:
+#	If unary operator, use binary search to locate the interval giving a high atomic condition number.
+#	If binary operator, try a combination of the intervals of the two operands (lower half, lower half), 
+#																			   (lower half, higher half),
+#																			   (higher half, lower half),
+#																			   (higher half, higher half)
+#	and narrow down on the two intervals
+
+
+# Algorithm to examine stability
+# Form a list of output nodes
+# For each node in the AST of the output node, 
+# 	generate expressions
+# Starting from the bottom up for each node,
+# 	Generate atomic condition expression
+#	Determine if expression is well-conditioned for the given input interval using gelpia on the atomic condition 
+#	expression
+#	If ill-conditioned expression found?
+#		Have another user option to find narrow interval for this following above procedure.
+#	else
+#		Report the ill-conditioned expression and quit.
+#	If all expressions under the AST are well-conditioned in given interval, the algorithm is stable
 #
-#
-def examine_stability():
+def perform_stability_analysis(program_argument_list):
 	"""
 	Examines the stability of the input program
 
@@ -353,6 +391,13 @@ def examine_stability():
 	output_variable_node_list = [predicated_node_tuple[0][0] for predicated_node_tuple in
 								 [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]]
 
+	stability_analyzer = StabilityAnalysis(program_argument_list, output_variable_node_list)
+	print(stability_analyzer.analysis_options)
+	print(stability_analyzer.candidate_node_list)
+	print(stability_analyzer.parent_dict)
+	print(stability_analyzer.atomic_condition_numbers)
+	print(stability_analyzer.cond_syms)
+
 
 	print("Completed examining stability...")
 	return
@@ -360,7 +405,8 @@ def examine_stability():
 
 if __name__ == "__main__":
 	start_exec_time	= time.time()
-	program_argument_list = parseArguments()
+	cli_parser = create_parser()
+	program_argument_list = cli_parser.parse_args()
 	Globals.argList = program_argument_list
 	Globals.enable_constr = program_argument_list.enable_constr
 	sys.setrecursionlimit(10**6)
@@ -417,9 +463,9 @@ if __name__ == "__main__":
 	#------ Main Analysis ----------------------------------------
 
 	if program_argument_list.examine_stability:
-		examine_stability()
+		perform_stability_analysis(program_argument_list)
 	elif program_argument_list.error_analysis:
-		error_analysis(program_argument_list)
+		perform_error_analysis(program_argument_list)
 	else:
 		print("Invalid Input")
 	ea2 = time.time()

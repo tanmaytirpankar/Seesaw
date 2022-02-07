@@ -22,23 +22,23 @@ Satire requires the following softwares to be installed.
 
 ## Usage
 
-Seesaw is a python based framework. The main function is available is "src/satire+.py"
+Seesaw is a python based framework. The main function is available is "src/seesaw.py"
 The "--help" command clarifies all the supporting arguments. Some of the functionality such as abstraction and parallel 
 is the same as Satire and has been demonstrated in Satire repository. Currently, Seesaw does not have empirical analysis
 support like Satire but it will be added soon. Here we will explain the additional functionality that is not present in 
 Satire.
 
 #### Example1 (with constraints)
-  > python3 src/satire+.py --std --file tests/smartRoot.txt
+  > python3 src/seesaw.py --std --file tests/smartRoot.txt
 
 [TODO]
 
 #### Example2 (with stats)
-  > python3 src/satire+.py --std --file Benchmarks/test2/SAT/test2.txt --stat
+  > python3 src/seesaw.py --std --file Benchmarks/test2/SAT/test2.txt --stat
 
 [RECHECK. Probably wrong. Remove if not necessary] Prints out error statistics everytime discontinuities are merged.
 
 #### Example3 (with instabilities)
-  > python3 src/satire+.py --std --file Benchmarks/test2/SAT/test2.txt --report-instability
+  > python3 src/seesaw.py --std --file Benchmarks/test2/SAT/test2.txt --report-instability
 
 Prints out the sorted instability list.
