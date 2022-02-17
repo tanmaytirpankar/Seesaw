@@ -1,4 +1,4 @@
-# --file ../tests/AdditionalTests/atomic_conditions_paper_example.txt --gverbose --use_atomic_conditions
+# --file ../tests/AdditionalTests/atomic_conditions_paper_example.txt --gverbose -s -i
 
 INPUTS {
 	x fl64 : (1.0e-7, 1.0e-7);

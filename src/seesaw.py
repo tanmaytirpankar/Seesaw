@@ -77,6 +77,10 @@ def create_parser():
 						help='Performs Error Analysis which includes finding worst case error and examining instability.',
 						default=False,
 						action='store_true')
+	parser.add_argument('-i', '--find_ill_conditioning_input',
+						help='Find input interval triggering the ill-conditioned expression if any',
+						default=False,
+						action='store_true')
 
 	return parser
 
@@ -367,7 +371,7 @@ def perform_error_analysis(program_argument_list):
 # 	Generate atomic condition expression
 #	Determine if expression is well-conditioned for the given input interval using gelpia on the atomic condition 
 #	expression
-#	If ill-conditioned expression found?
+#	If ill-conditioned expression found then
 #		Have another user option to find narrow interval for this following above procedure.
 #	else
 #		Report the ill-conditioned expression and quit.
@@ -390,13 +394,18 @@ def perform_stability_analysis(program_argument_list):
 
 	output_variable_node_list = [predicated_node_tuple[0][0] for predicated_node_tuple in
 								 [Globals.global_symbol_table[0]._symTab[outVar] for outVar in Globals.outVars]]
+	input_variable_node_list = list(filter(lambda node: node.depth == 0, [predicated_node_tuple[0][0] for variable, predicated_node_tuple
+																		  in Globals.global_symbol_table[0]._symTab.items()]))
 
-	stability_analyzer = StabilityAnalysis(program_argument_list, output_variable_node_list)
-	print(stability_analyzer.analysis_options)
-	print(stability_analyzer.candidate_node_list)
-	print(stability_analyzer.parent_dict)
-	print(stability_analyzer.atomic_condition_numbers)
-	print(stability_analyzer.cond_syms)
+	stability_analyzer = StabilityAnalysis(program_argument_list, output_variable_node_list, input_variable_node_list)
+	stability_analyzer.generate_atomic_conditions_driver()
+	# print(stability_analyzer.atomic_condition_numbers)
+	stability_analyzer.determine_stability_driver()
+
+	# Debugging print statements
+	# print("Atomic Condition Numbers")
+	# print(stability_analyzer.atomic_condition_numbers)
+
 
 
 	print("Completed examining stability...")

@@ -116,6 +116,16 @@ def process_conditionals( innerConds, externConds ):
 
 # Processes command string to invoke gelpia and returns the result.
 def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func-> Dur:"):
+	# print("Invoking Gelpia")
+	# print("Symbolic Expression")
+	# print(symExpr)
+	# print("Conditional Expression")
+	# print(cond_expr)
+	# print("External Constraints")
+	# print(externConstraints)
+	# print("Input String")
+	# print(inputStr)
+	# exit(0)
 	#try:
 	#    const_intv = float(str(symExpr))
 	#    return [const_intv, const_intv]
@@ -300,6 +310,126 @@ def invoke_gelpia_herror(symExpr, inputStr, label="Func-> Dur:"):
 	return [min_lower if min_lower!="Overconstrained" else 0.0, \
 	        max_upper.value if max_upper.value!="Overconstrained" else 0.0]
 
+
+def extremum_of_symbolic_expression(symbolic_expression, conditional_expression, external_constraints, input_string,
+									max=True):
+
+	# print("Invoking Gelpia")
+	# print("Symbolic Expression")
+	# print(symbolic_expression)
+	# print("Conditional Expression")
+	# print(conditional_expression)
+	# print("External Constraints")
+	# print(external_constraints)
+	# print("Input String")
+	# print(input_string)
+	# print("Number of operations", seng.count_ops(symbolic_expression))
+
+	# Processing symbolic expression for gelpia
+	string_expression = re.sub(r'\*\*', "^", str(symbolic_expression))
+	string_expression = re.sub(r'Abs', "abs", string_expression)
+	string_expression = re.sub(r're\b', "", string_expression)
+	string_expression = re.sub(r'im\b', "0.0*", string_expression)
+
+	# Processing conditional expression for gelpia
+	if conditional_expression == Globals.__T__:
+		conditional_expression_string = "(1 <= 1)"
+	else:
+		conditional_expression_string = str(conditional_expression)
+		conditional_expression_string = re.sub(r'\&\&', "&", conditional_expression_string)
+		conditional_expression_string = re.sub(r'\|\|', "|", conditional_expression_string)
+		conditional_expression_string = re.sub(r'\&', "&&", conditional_expression_string)
+		conditional_expression_string = re.sub(r'\|', "||", conditional_expression_string)
+		conditional_expression_string = re.sub(r'\*\*', "^", conditional_expression_string)
+		conditional_expression_string = re.sub(r'Abs', "abs", conditional_expression_string)
+		conditional_expression_string = re.sub(r're\b', "", conditional_expression_string)
+		conditional_expression_string = re.sub(r'im\b', "0.0*", conditional_expression_string)
+		conditional_expression_string = re.sub(r'\<\<', "(", conditional_expression_string)
+		conditional_expression_string = re.sub(r'\>\>', ")", conditional_expression_string)
+		conditional_expression_string = re.sub(r'True', "1<=1", conditional_expression_string)
+		conditional_expression_string = re.sub(r'False', "1<=0", conditional_expression_string)
+
+	# Processing external constrains for gelpia
+	external_constraints_string = str(external_constraints)
+	external_constraints_string = re.sub(r'\&\&', "&", external_constraints_string)
+	external_constraints_string = re.sub(r'\|\|', "|", external_constraints_string)
+	external_constraints_string = re.sub(r'\&', "&&", external_constraints_string)
+	external_constraints_string = re.sub(r'\|', "||", external_constraints_string)
+	external_constraints_string = re.sub(r'\*\*', "^", external_constraints_string)
+	external_constraints_string = re.sub(r'Abs', "abs", external_constraints_string)
+	external_constraints_string = re.sub(r're\b', "", external_constraints_string)
+	external_constraints_string = re.sub(r'im\b', "0.0*", external_constraints_string)
+	external_constraints_string = re.sub(r'\<\<', "(", external_constraints_string)
+	external_constraints_string = re.sub(r'\>\>', ")", external_constraints_string)
+	external_constraints_string = re.sub(r'True', "1<=1", external_constraints_string)
+	external_constraints_string = re.sub(r'False', "1<=0", external_constraints_string)
+
+	Globals.gelpiaID += 1
+	# print("Constr?", Globals.enable_constr, " Begining New gelpia query->ID:", Globals.gelpiaID)
+
+	# Combining conditional expression and external constraints
+	str_constraint = " && ".join(
+		[conditional_expression_string] + ([] if external_constraints_string is None or
+												 len(external_constraints_string) == 0
+										   else [external_constraints_string]))
+
+	# Forming final input string for gelpia
+	if Globals.enable_constr:
+		gelpia_input_string = input_string + str_constraint + "; " + string_expression
+	else:
+		gelpia_input_string = input_string + string_expression  ## without the constraints
+
+	# Logging gelpia queries
+	if Globals.argList.gverbose:
+		fout = open("gelpia_" + str(Globals.gelpiaID) + ".txt", "w")
+		fout.write("# --input-epsilon {ieps}\n".format(ieps=str(gelpia_input_epsilon)))
+		fout.write("# --output-epsilon {oeps}\n".format(oeps=str(gelpia_output_epsilon)))
+		fout.write("# --output-epsilon-relative {oreps}\n".format(oreps=str(gelpia_output_epsilon_relative)))
+		fout.write("# --dreal-epsilon {oeps}\n".format(oeps=str(gelpia_dreal_epsilon)))
+		fout.write("# --dreal-epsilon-relative {oreps}\n".format(oreps=str(gelpia_dreal_epsilon_relative)))
+		fout.write("# --timeout {tout}\n".format(tout=str(gelpia_timeout)))
+		fout.write("# --max-iters {miters}\n".format(miters=str(gelpia_max_iters)))
+		fout.write("{x3opt}".format(x3opt="# --use-z3\n" if Globals.argList.useZ3 else ""))
+		fout.write(gelpia_input_string)
+		fout.close()
+
+	start_time = time.time()
+
+	if max:
+		extremum_function = gelpia.find_max
+	else:
+		extremum_function = gelpia.find_min
+	extrema_lower_bound, extrema_upper_bound, inputs, solver_calls = extremum_function(gelpia_input_string,
+															 gelpia_epsilons,
+															 gelpia_timeout,
+															 gelpia_grace,
+															 gelpia_update,
+															 gelpia_max_iters,
+															 gelpia_seed,
+															 False,
+															 Globals.argList.useZ3,
+															 gelpia.SRC_DIR,
+															 gelpia_rust_executable,
+															 False)
+	# print("Inputs")
+	# print(inputs)
+
+	end_time = time.time()
+
+	# Gelpia output stats
+	# print("Finishing gelpia query->ID:", Globals.gelpiaID)
+	# print("extrema_lower_bound", extrema_lower_bound, type(extrema_lower_bound))
+	# print("extrema_upper_bound", extrema_upper_bound, type(extrema_upper_bound))
+	# print("solver_calls", total_solver_calls)
+
+	Globals.solver_calls += solver_calls
+
+	if not max and extrema_lower_bound != "Overconstrained":
+		return extrema_lower_bound
+	elif max and extrema_upper_bound != "Overconstrained":
+		return extrema_upper_bound
+	else:
+		0.0
 	
 #def extract_input_dep(free_syms):
 #	ret_list = list()
@@ -497,5 +627,55 @@ def extract_partialAST(NodeList):
 	#	print(k.f_expression, [v.f_expression for v in vlist])
 
 	return parent_dict
-			
 
+# subdivide interval into two halves
+# if the extremum lessens on lower half,
+# 	recurse on upper half
+# else if the extremum remains the same on lower half (else case since we have asser computed_extremum <= extremum),
+#	if the extremum lessens on upper half
+#		recurse on lower half
+# return interval
+
+# terminate recursion when input variable interval is smaller than some threshold
+# set the interval for the respective input variable and return the new input set to the top of the search call stack
+def binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, input_interval_dict, extremum, input_variable, max=True):
+	if input_interval_dict[input_variable][1] - input_interval_dict[input_variable][0] < 2**-53:
+		return input_interval_dict
+	interval_mid = (input_interval_dict[input_variable][0]+input_interval_dict[input_variable][1]) / 2
+	# print(input_interval_dict)
+
+	# TODO: Optimize this part to only change the input_variable interval instead of creating the input string each time
+	for index in range(2)[::-1]:
+		candidate_interval_dict = copy.deepcopy(input_interval_dict)
+		candidate_interval_dict[input_variable][index] = interval_mid
+		input_variable_string_list = []
+		for variable, interval in candidate_interval_dict.items():
+			input_variable_string_list += [variable, " = ", str(interval), ";"]
+		input_string = "".join(input_variable_string_list)
+		# print("Input sent")
+		# print(candidate_interval_dict)
+		computed_extremum = extremum_of_symbolic_expression(symbolic_expression, "<<True>>", "", input_string, True)
+		# print(computed_extremum)
+		# print(interval_mid)
+		assert computed_extremum <= extremum
+		if computed_extremum < extremum:
+			candidate_interval_dict = copy.deepcopy(input_interval_dict)
+			candidate_interval_dict[input_variable][int(not index)] = interval_mid
+			return binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, candidate_interval_dict, extremum, input_variable, max=True)
+
+	return input_interval_dict
+
+
+
+# For each input variable
+#	Perform binary search for input interval that keeps the extremum unchanged
+def binary_search_for_input_set(symbolic_expression, conditional_expression, external_constraints, input_interval_dict, extremum, max=True):
+	candidate_interval_dict = input_interval_dict
+
+	for input_variable, interval in input_interval_dict.items():
+		print(input_variable)
+		print(candidate_interval_dict)
+		candidate_interval_dict = binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, candidate_interval_dict, extremum, input_variable, max)
+
+
+	return candidate_interval_dict

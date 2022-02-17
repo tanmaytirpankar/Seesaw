@@ -151,18 +151,29 @@ class AnalyzeNode_Cond(object):
 		#print(type(node).__name__, node.depth, self.parentTracker[node], len(node.parents) , len(self.parent_dict[node]))#, node.f_expression)
 		return True if self.parentTracker[node] >= len(self.parent_dict[node]) else False
 
-
-
-	# Accumulates the backward derivative of
-	# Let p stand for the partial derivative symbol 'del'
-	# For every output s, ps/pu = product for all i (ps/pw_i)*(pw_i/pu) where u are all the inputs and w_i are the
-	# intermediate nodes.
-	# Let T stand for atomic condition number
-	#
-	# Also calculate the atomic condition number of every output s with respect every input u using the formula
-	# T_z(u) is the atomic condition number of operation at node z with respect to node u
-	# T_z(u) = u * (pz/pu) / z
 	def visit_node_deriv(self, node):
+		"""
+		Generates backward derivative expression of child u with respect to the output node s using the current node w.
+		(ps/pw)*(pw/pu)
+		Let p stand for the partial derivative symbol 'del'
+		For every output s, ps/pu = product for all i (ps/pw_i)*(pw_i/pu) where u are all the inputs and w_i are the
+		intermediate nodes.
+		Let T stand for atomic condition number
+		Also generates the atomic condition of every output s with respect every input u using the formula
+		T_z(u) is the atomic condition number of operation at node z with respect to node u
+		T_z(u) = u * (pz/pu) / z
+
+		Parameters
+		----------
+		node : node type
+			Any node
+
+		Returns
+		-------
+		Nothing
+		Generates  backward derivative/atomic condition expression for the children of node. Updates parent tracker and
+		updates nextWorklist
+		"""
 		st = time.time()
 
 		# TODO: The keys of bwdDeriv of node have been observed to be the root node of the expression whose derivatives
@@ -249,14 +260,25 @@ class AnalyzeNode_Cond(object):
 		#print("Time taken =", et-st,"\n\n")
 
 
-	# For each node in the workList, calculates the backward derivative for the children with respect to this node.
-	# Partitions the next_workList into workList and next_workList using the next_depth.
-	# Eventually backward derivatives of all trimList nodes have been calculated with respect to all nodes.
 	def traverse_ast(self):
+		"""
+		Generates the backward derivative/atomic condition expression of all nodes in the AST in a top down fashion.
+		Partitions the next_workList into workList and next_workList using the next_depth to form workList.
+
+		Parameters
+		----------
+		None
+
+		Returns
+		-------
+		Nothing. Completed generation of backward derivative/atomic condition expression of all nodes in the AST.
+		Result stored in the "self" object.
+		"""
 		next_workList = []
 		curr_depth = 0
 		next_depth = -1
-		while(len(self.workList) > 0):
+		while len(self.workList) > 0:
+
 			node = self.workList.pop()
 
 			curr_depth = node.depth
@@ -269,14 +291,14 @@ class AnalyzeNode_Cond(object):
 			# 4) else append to back of workList
 			if self.completed1[node.depth].__contains__(node):
 				pass
-			elif (utils.isConst(node)):
+			elif utils.isConst(node):
 				self.completed1[node.depth].add(node)
-			elif (self.converge_parents(node)):
+			elif self.converge_parents(node):
 				self.visit_node_deriv(node)
 			else:
 				self.workList.append(node)
 
-			if(len(self.workList)==0 and next_depth!=-1 and len(self.next_workList)!=0):
+			if len(self.workList)==0 and next_depth!=-1 and len(self.next_workList)!=0:
 				nextIter, currIter = utils.partition(self.next_workList,\
 													lambda x: x.depth==next_depth)
 				self.workList = list(set(currIter))
@@ -926,7 +948,6 @@ class AnalyzeNode_Cond(object):
 	# Build derivatives and find errors.
 	#def start(self, bound_min=Globals.argList.mindepth, bound_max=Globals.argList.maxdepth ):
 	def start(self, bound_min=10, bound_max=20 ):
-	
 		MaxDepth = max([node.depth for node in self.trimList])
 		print("MAXDEPTH1:{MaxDepth}".format(MaxDepth=MaxDepth))
 
@@ -949,11 +970,6 @@ class AnalyzeNode_Cond(object):
 		dt1 = time.time()
 		print(" > Begin building derivatives....")
 		logger.info(" > Begin building derivatives....")
-		for node1 in Globals.depthTable[7]:
-			if node1.token.type == 'MUL' and node1.token.lineno == 27:
-				print("Check-deriv")
-				print(self.bwdDeriv[node1])
-				print(self.atomic_condition_numbers[node1])
 		self.traverse_ast()
 		dt2 = time.time()
 		print(" > Finished in {duration} secs\n".format(duration=dt2-dt1))

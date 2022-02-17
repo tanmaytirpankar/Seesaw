@@ -197,7 +197,7 @@ def expression_builder_driver(candidate_list, etype=False, ctype=False, inv=Fals
 	# For each node, build the complete expression within the node itself and accumulate free_syms and cond_syms
 	for node in candidate_list:
 		if not reachable[node.depth].__contains__(node):
-			print(node.depth)
+			# print(node.depth)
 			(free_syms, cond_syms) = build_expression_at_node(node, reachable, parent_dict, free_syms, cond_syms, cond=Globals.__T__,etype=etype, ctype=ctype, inv=inv)
 
 		#print(node.f_expression)
