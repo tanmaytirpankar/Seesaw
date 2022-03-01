@@ -1,3 +1,5 @@
+# --file ../tests/dqmom.txt --gverbose -e --enable-abstraction --mindepth 10 --maxdepth 20
+
 INPUTS	{ m0 fl64 :(-1.0, 1.0) ;
 		  m1 fl64 :(-1.0, 1.0) ;
 		  m2 fl64 :(-1.0, 1.0) ;

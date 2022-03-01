@@ -105,7 +105,6 @@ class AnalyzeNode_Cond(object):
 	def __setup_outputs__(self):
 		for node in self.trimList:
 			self.bwdDeriv[node] = {node: SymTup((Sym(1,Globals.__T__), ))}
-			print("Here now")
 			if self.use_atomic_conditions:
 				self.atomic_condition_numbers[node] = {node: SymTup((Sym(1, Globals.__T__), ))}
 			self.parentTracker[node] = len(self.parent_dict[node])
@@ -913,11 +912,11 @@ class AnalyzeNode_Cond(object):
 		return self.rebuildAST(self.trimList)
 
 	def abstractAnalysis(self, MaxDepth, bound_min, bound_max):
-		[abs_depth, sel_candidate_list] = helper.selectCandidateNodes(MaxDepth, bound_min, bound_max)
+		[abs_depth, sel_candidate_list] = helper.select__abstraction_candidate_nodesndidateNodes(MaxDepth, bound_min, bound_max)
 
 		while abs_depth == MaxDepth and bound_min < bound_max +1:
 			bound_max = bound_max - 1
-			[abs_depth, sel_candidate_list] = helper.selectCandidateNodes(MaxDepth, bound_min, bound_max)
+			[abs_depth, sel_candidate_list] = helper.select_abstraction_candidate_nodes(MaxDepth, bound_min, bound_max)
 
 		if ( len(sel_candidate_list) > 0):
 			return self.simplify_with_abstraction(sel_candidate_list, self.argList, MaxDepth, bound_min, bound_max)

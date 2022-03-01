@@ -1,0 +1,33 @@
+INFO:root:Parsing time : 0.0003733634948730469 secs
+INFO:root:Full AST_DEPTH : 1
+INFO:root:
+Abstraction Enabled... 
+
+INFO:helper:Building conditional expressions...
+
+INFO:AnalyzeNode_Cond: > Begin building derivatives....
+INFO:AnalyzeNode_Cond: > Finished in 0.0005910396575927734 secs
+
+INFO:AnalyzeNode_Cond:Analyzing error for the current abstraction block...
+
+INFO:AnalyzeNode_Cond:
+ Parsing Conditional = True
+INFO:AnalyzeNode_Cond:
+ Parsing Conditional = True
+INFO:AnalyzeNode_Cond: > MaxError:
+ 8.881784197001255e-17 ; [-0.8, 0.0]
+
+INFO:AnalyzeNode_Cond:Finished in 0.04870176315307617 secs
+
+INFO:root:Optimizer calls : 2
+
+INFO:root:Smt calls : 0
+
+INFO:root:Parsing time : 0.0003733634948730469
+
+INFO:root:PreProcessing time : 4.76837158203125e-07
+
+INFO:root:Analysis time : 0.049919843673706055
+
+INFO:root:Full time : 0.05193734169006348
+

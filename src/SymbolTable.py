@@ -38,7 +38,7 @@ class SymbolTable(object):
 
 	def insert(self, symbol, nodeCondTup):
 		"""
-		Inserts a entry in this Symbol Table with symbol as key and nodeCondTup as value (tuple of predicated nodes)
+		Inserts an entry in this Symbol Table with symbol as key and nodeCondTup as value (tuple of predicated nodes)
 		Returns
 		-------
 		Nothing

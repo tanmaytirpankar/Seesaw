@@ -167,7 +167,7 @@ class Sym(object):
 		elif not Globals.simplify:
 			expr1 = (self.exprCond[0] - obj.exprCond[0])
 			cond = (self.exprCond[1] & obj.exprCond[1]).simplify() 
-			return Sym(expr1, cond)			
+			return Sym(expr1, cond)
 		else:
 			expr1 = (self.exprCond[0] - obj.exprCond[0])
 			cond = (self.exprCond[1] & obj.exprCond[1]).simplify() 

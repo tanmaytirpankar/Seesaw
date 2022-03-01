@@ -155,6 +155,19 @@ _atomic_condition_ops = {
 			TAN		:	[lambda operand_list : (operand_list[0] / (operand_list[0].__sin__() * operand_list[0].__cos__())).__abs__()]
 }
 
+_atomic_condition_danger_zones = {
+			PLUS	:	lambda operand_list : str(operand_list[0]) + " != " + str(-operand_list[1]),
+			MINUS	:	lambda operand_list : str(operand_list[0]) + " != " + str(operand_list[1]),
+			MUL		:	lambda operand_list : "No danger zone",
+			DIV		:	lambda operand_list : "No danger zone",
+			SQRT	:	lambda operand_list : "No danger zone",
+			EXP		:	lambda operand_list : str(operand_list[0]) + " -> +inf or -inf",
+			SIN		:	lambda operand_list : str(operand_list[0]) + " -> n*pi where n is any integer",
+			ASIN	:	lambda operand_list : str(operand_list[0]) + " -> -1 from positive side or 1 from negative side",
+			COS		:	lambda operand_list : str(operand_list[0]) + " -> n*pi + pi/2 where n is any integer",
+			TAN		:	lambda operand_list : str(operand_list[0]) + " -> n*pi / 2 where n is any integer",
+}
+
 
 _Priority = { \
 				IF		:	0,	\

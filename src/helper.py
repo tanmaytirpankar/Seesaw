@@ -10,7 +10,7 @@ from gtokens import *
 
 import ops_def as ops
 
-import logging 
+import logging
 
 import ctypes
 
@@ -253,7 +253,7 @@ def handleConditionals(conditional_node_list, etype=True, inv=False):
 	return cstr, fsyms, csyms
 
 def pretraverse(node, reachable):
-	
+
 	for child in node.children:
 		#print("child", child, type(node).__name__)
 		if reachable[child.depth].__contains__(child):
@@ -269,7 +269,7 @@ def pretraverse(node, reachable):
 
 
 def PreProcessAST():
-	
+
 	print("\n------------------------------")
 	print("PreProcessing Block:")
 
@@ -295,57 +295,130 @@ def PreProcessAST():
 	logger.info("Total number of nodes post-processing: {curr}".format(curr=curr_numNodes))
 	print("Total number of nodes pre-processing: {prev}".format(prev=prev_numNodes))
 	print("Total number of nodes post-processing: {curr}".format(curr=curr_numNodes))
-	
+
 	print("------------------------------\n")
 
-# Creates a flattened set of children of node that lie between mind and maxd
-def get_child_dependence(node, mind, maxd):
-	dependence = set()
 
-	if len(node.children) > 0 and node.depth > mind and node.depth <= maxd:
-		print("DD:", node.depth)
+def get_nodes_within_bounds(node, minimum_depth, maximum_depth):
+	"""
+	Creates a flattened subset of nodes below 'node' that lie between minimum_depth and maximum_depth
+
+	Parameters
+	----------
+	node : node type
+		Any node
+	minimum_depth : int
+		Lower depth used to filter nodes
+	maximum_depth : int
+		Upper depth used to filter nodes
+
+	Returns
+	-------
+	dependent_node_set : set
+		Set of nodes that 'node' depends on within specified depth bounds
+	"""
+	dependent_node_set = set()
+
+	if len(node.children) > 0 and minimum_depth < node.depth <= maximum_depth:
 		for child in node.children:
-			dependence = dependence.union(get_child_dependence(child, mind, maxd))
+			dependent_node_set = dependent_node_set.union(get_nodes_within_bounds(child, minimum_depth, maximum_depth))
 
-	#return dependence.difference(common_dependence(node, mind, maxd))
-	return dependence
+	return dependent_node_set
 
-# TODO: Might be wrong. Problem 1: Since find_all_dependence is a list, we cannot apply intersection on its elements.
-# TODO: Problem 2: It is created from sets so elements unique and so an intersection operation will always be empty.
-# Returns a subset of children of "node" that are depended on by multiple children.
-def common_dependence(node, mind, maxd):
-	find_all_dependence = [get_child_dependence(child, mind, maxd) for child in node.children]
-	if node not in find_all_dependence:
-		find_all_dependence.append({node})
-	#print(type(node), [child.rec_eval(child) for child in node.children])
-	#print([child for child in node.children])
-	#print(find_all_dependence)
-	if(len(find_all_dependence)!=0):
-		common_subset = reduce(lambda x,y: x.intersection(y), find_all_dependence, find_all_dependence[0])
+
+def common_nodes(node, minimum_depth, maximum_depth):
+	"""
+	Finds nodes that are common between the flattened set of nodes of the children of 'node' within minimum_depth and
+	maximum_depth
+
+	Parameters
+	----------
+	node : node type
+		Any node
+	minimum_depth : int
+		Lower depth used to filter nodes
+	maximum_depth : int
+		Upper depth used to filter nodes
+
+	Returns
+	-------
+	common_nodes_set : set
+		Set of nodes common between the nodes below the children of 'node' lyging between the specified bounds.
+	"""
+	print("Getting all nodes within ", minimum_depth, " < depth <= ", maximum_depth, "below node: ", node)
+	dependent_node_list = [get_nodes_within_bounds(child, minimum_depth, maximum_depth) for child in node.children]
+	print(dependent_node_list)
+
+	# Appending node as it would not be in the above generated list of sets
+	if node not in dependent_node_list:
+		dependent_node_list.append({node})
+
+	# Finding common nodes between the node sets of children
+	if len(dependent_node_list)!=0:
+		common_nodes_set = reduce(lambda x,y: x.intersection(y), dependent_node_list, dependent_node_list[0])
 	else:
-		common_subset = set()
-	return common_subset
+		common_nodes_set = set()
 
-# Returns a dictionary of common dependencies among children for each node in nodeList
-def find_common_dependence( nodeList, mind, maxd ):
-	
-	common_subset = dict()
+	return common_nodes_set
 
-	for node in nodeList:
-		preList = common_dependence(node, mind, maxd)
-		redundant_list = reduce(lambda x,y: x.union(y), [common_dependence(n, mind, maxd) for n in preList], set())
-		dep_set = preList.difference(redundant_list)
-		common_subset[node] = set([node] if node.depth > mind and node.depth <= maxd else []) if len(dep_set)==0 else dep_set
-#		common_subset[node] = common_dependence(node, mind, maxd)
 
-	return common_subset
+def find_common_dependence(node_list, minimum_depth, maximum_depth):
+	"""
+	In a list, for each node, finds set of nodes below its children that are common and removes redundant nodes.
 
-# Creates a set of all nodes within depth maxd from all nodes in depthTable and from it filters nodes with token type
-# optype. The filtered set is returned.
-def get_opList(optype, maxd):
-	allNodes = reduce(lambda x,y: x.union(y), [set(nodesList) for k,nodesList in Globals.depthTable.items() if k!=0 and k <= maxd], set())
-	opList = set(filter(lambda x: x.token.type==optype, allNodes))
-	return opList
+	Parameters
+	node_list : list
+		List of nodes
+	minimum_depth : int
+		Lower depth used to filter nodes
+	maximum_depth : int
+		Upper depth used to filter nodes
+
+	Returns
+	-------
+	common_node_dict : dict
+		Dictionary[node -> set] of nodes that 'node' depends on
+	"""
+	common_nodes_dict = dict()
+
+	for node in node_list:
+		# Finding nodes common between the nodes below children of 'node'
+		initial_dependence_list = common_nodes(node, minimum_depth, maximum_depth)
+
+		# Finding nodes that are common between nodes below nodes from the above list
+		redundant_nodes_list = reduce(lambda x, y: x.union(y), [common_nodes(n, minimum_depth, maximum_depth) for n in
+																initial_dependence_list], set())
+
+		# Removing redundant nodes found from initial list and adding to dictionary
+		final_dependence_set = initial_dependence_list.difference(redundant_nodes_list)
+		common_nodes_dict[node] = set([node] if minimum_depth < node.depth <= maximum_depth
+									  else []) if len(final_dependence_set)==0 else final_dependence_set
+
+	return common_nodes_dict
+
+
+def filter_nodes_with_operation_within_depth(operation_token_type, max_depth):
+	"""
+	Creates a set of all nodes within depth max_depth from all nodes in depthTable and from it filters nodes with token
+	type operation_token_type.
+
+	Parameters
+	----------
+	operation_token_type : const
+		Type of token to filter out nodes
+	max_depth : int
+		Max depth for filtration process
+
+	Returns
+	-------
+	node_set : set
+		Filtered nodes
+	"""
+	node_set = reduce(lambda x,y: x.union(y), [set(nodesList) for k,nodesList in Globals.depthTable.items() if k != 0 and
+											   k <= max_depth], set())
+	filtered_node_list = set(filter(lambda x: x.token.type == operation_token_type, node_set))
+
+	return filtered_node_list
 
 
 def	parallelConcat(t1, t2):
@@ -385,7 +458,7 @@ def parallel_merge(symTab1, symTab2, scope):
 
 	return newtab
 
-# def filterCandidate(bdmin, bdmax, dmax):
+# def filter_candidates_for_abstraction(bdmin, bdmax, dmax):
 # 	#workList =  [[v[0] for v in node_set if v[0].depth!=0]\
 # 	#            for k,node_set in Globals.global_symbol_table[0]._symTab.items()]
 # 	#workList =  [[v for v in node_set if v.depth!=0]\
@@ -405,78 +478,115 @@ def parallel_merge(symTab1, symTab2, scope):
 # 							 #))
 
 
-def filterCandidate(bdmin, bdmax, dmax):
-	
-	workList = []
-	opList = get_opList(DIV, bdmax)
-	D = find_common_dependence(opList,5, bdmax)
-	print(bdmin, bdmax, dmax, D)
-	workList = list(reduce(lambda x,y : x.union(y), [v for k,v in D.items()], set()))
-	if len(workList)==0:
-		print("Empty WorkList!")
+def filter_candidates_for_abstraction(lower_bound, upper_bound, maximum_depth):
+	"""
+	Filters nodes with depth within lower_bound and upper
+
+	Parameters
+	----------
+	lower_bound : int
+		The lower bound of the filter.
+	upper_bound : int
+		The upper bound of the filter.
+	maximum_depth : int
+		The max depth of the ast
+
+	Returns
+	-------
+	dependence_node_list : list
+		List of filtered nodes within the specified depth bounds
+	"""
+	filtered_node_set = filter_nodes_with_operation_within_depth(DIV, upper_bound)
+	common_dependence_node_dict = find_common_dependence(filtered_node_set, 5, upper_bound)
+	print(lower_bound, upper_bound, maximum_depth, common_dependence_node_dict)
+	dependence_node_list = list(reduce(lambda x,y : x.union(y), [v for k,v in common_dependence_node_dict.items()], set()))
+	if len(dependence_node_list)==0:
+		print("Empty dependence_node_list! Generating candidates")
+		dependence_node_list = [[v for v in node_list if
+								 v.depth != 0 and v.token.type in ops.DFOPS_LIST and v.depth >= lower_bound and v.depth <= upper_bound] \
+								for k, node_list in Globals.depthTable.items()]
+
+		print("dependence_node_list:", [[type(n).__name__ for n in m] for m in dependence_node_list])
+		# dependence_node_list = list(filter(lambda v : type(v).__name__ in ("TransOp", "BinOp", "Num", "LiftedOp"), dependence_node_list))
+		dependence_node_list = list(set(reduce(lambda x, y: x + y, dependence_node_list, [])))
 		pass
 	else:
-		maxdepth = max([n.depth for n in workList])
-		print("1:From Filter Cands:", len(workList), len(opList))
-		workList = [n for n in workList if n.depth == maxdepth]
-		print("2:From Filter Cands:", len(workList), len(opList), [n.token.lineno for n in workList], maxdepth)
+		# Find greatest depth from all nodes in the dependence_node_list
+		maxdepth = max([n.depth for n in dependence_node_list])
+		print("1:From Filter Cands:", len(dependence_node_list), len(filtered_node_set))
 
-	for k, nodeList in Globals.depthTable.items():
-		print("FC:", k, [n.depth for n in nodeList])
-	if(len(workList) == 0):
-		workList =  [[v for v in nodeList if v.depth!=0 and v.token.type in ops.DFOPS_LIST and v.depth>=bdmin and v.depth<=bdmax]\
-	            for k,nodeList in Globals.depthTable.items()]
+		# Select nodes with depth=maxdepth
+		dependence_node_list = [n for n in dependence_node_list if n.depth == maxdepth]
+		print("2:From Filter Cands:", len(dependence_node_list), len(filtered_node_set), [n.token.lineno for n in dependence_node_list], maxdepth)
 
-		print("WorkList:", [[type(n).__name__ for n in m] for m in workList])
-		#workList = list(filter(lambda v : type(v).__name__ in ("TransOp", "BinOp", "Num", "LiftedOp"), workList))
-		workList = list(set(reduce(lambda x,y : x+y, workList, [])))
+	# for k, node_list in Globals.depthTable.items():
+	# 	print("FC:", k, [n.depth for n in node_list])
 
-	print("Final WorkList!", workList)
-	return workList
+	print("Final dependence_node_list!", dependence_node_list)
+	return dependence_node_list
 
-# TODO: Description
-def selectCandidateNodes(maxdepth, bound_mindepth, bound_maxdepth):
+
+def select_abstraction_candidate_nodes(max_depth, lower_bound_depth, upper_bound_depth):
+	"""
+	Selects the nodes for abstraction within specified depth window
+	Criteria of node selection:
+	1) Needs to be within depth window.
 	
-	PreCandidateList = filterCandidate(bound_mindepth, bound_maxdepth, maxdepth)
+	Parameters
+	----------
+	max_depth : int
+		Depth of the AST
+	lower_bound_depth : int
+		Lower bound of depth window for filtering nodes for abstraction
+	upper_bound_depth : int
+		Upper bound of depth window for filtering nodes for abstraction
+	Returns
+	-------
+	(int, list)
+		Depth of nodes to be abstracted and Candidate nodes chosen for abstraction
+	"""
+	initial_candidate_list = filter_candidates_for_abstraction(lower_bound_depth, upper_bound_depth, max_depth)
 
-	loc_bdmax = bound_maxdepth
-	while( len(PreCandidateList) <= 0 and loc_bdmax <= maxdepth):
-		loc_bdmax += 5
-		PreCandidateList = filterCandidate(bound_mindepth, loc_bdmax, maxdepth)
+	local_upper_bound = upper_bound_depth
+	# Keeps increasing upper bound of depth window till we get some candidate nodes for abstraction
+	while( len(initial_candidate_list) <= 0 and local_upper_bound <= max_depth):
+		local_upper_bound += 5
+		initial_candidate_list = filter_candidates_for_abstraction(lower_bound_depth, local_upper_bound, max_depth)
 
-	#print(PreCandidateList)
-	if(len(PreCandidateList) <= 0):
+	#print(initial_candidate_list)
+	if(len(initial_candidate_list) <= 0):
+		# Return since no candidates found for abstraction
 		return []
 	else:
-		f = lambda x : float(x.depth)/((loc_bdmax) + 0.01)
+		f = lambda x : float(x.depth)/((local_upper_bound) + 0.01)
 		g = lambda x, y : (-1)*y*math.log(y,2)*(len(x.parents)+ \
 		                       (len(x.children) if type(x).__name__ == "LiftOp" else 0) +\
 							   ops._Priority[x.token.type])
 		##
-		for cand in PreCandidateList:
+		for cand in initial_candidate_list:
 			print("Else:", cand.token.type, cand.token.value, cand.token.lineno, cand.depth)
 		##
-		loc_bdmax = max([n.depth for n in PreCandidateList])
+		local_upper_bound = max([n.depth for n in initial_candidate_list])
 		cost_list = list(map( lambda x : [x.depth, g(x, f(x))], \
-		                 PreCandidateList \
+		                 initial_candidate_list \
 						))
-		#print("bdmax:", loc_bdmax)
+		#print("bdmax:", local_upper_bound)
 		print(cost_list)
 		sum_depth_cost = [(depth, sum(list(map(lambda x:x[1] if x[0]==depth\
 		                     else 0, cost_list)))) \
-							 for depth in range(2, loc_bdmax+2)]
+							 for depth in range(2, local_upper_bound+2)]
 		print(sum_depth_cost)
 		sum_depth_cost.sort(key=lambda x:(-x[1], x[0]))
-		abs_depth = sum_depth_cost[0][0]
+		abstraction_depth = sum_depth_cost[0][0]
 
 
 		## Obtain all candidate list at this level
-		CandidateList = Globals.depthTable[abs_depth]
+		candidate_list = Globals.depthTable[abstraction_depth]
 
-		print("CURRENT AST_DEPTH = : {ast_depth}".format(ast_depth=maxdepth))
-		print("ABSTRACTION_DEPTH : {abs_depth}".format(abs_depth=abs_depth))
+		print("CURRENT AST_DEPTH = : {ast_depth}".format(ast_depth=max_depth))
+		print("ABSTRACTION_DEPTH : {abstraction_depth}".format(abstraction_depth=abstraction_depth))
 
-		return [abs_depth, CandidateList]
+		return [abstraction_depth, candidate_list]
 
 
 def writeToFile(results, fout, argList):

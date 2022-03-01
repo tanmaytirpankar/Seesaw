@@ -214,7 +214,7 @@ def mod_probe_list(probeNodeList):
 	return probeList
 
 
-	#opList = helper.get_opList(DIV)
+	#opList = helper.filter_nodes_with_operation_within_depth(DIV)
 	#D = helper.find_common_dependence(opList, 5, 40)
 	#for k,v in D.items():
 	#	print(v)
@@ -257,9 +257,10 @@ def perform_error_analysis(program_argument_list):
 		abstraction_level = 1
 		print("\nAbstraction Enabled... \n")
 		logger.info("\nAbstraction Enabled... \n")
+
 		print(bound_max_depth, bound_min_depth, max_depth)
 		while ( max_depth >= bound_max_depth and max_depth >= bound_min_depth ):
-			[abs_depth, sel_candidate_list] = helper.selectCandidateNodes(max_depth, bound_min_depth, bound_max_depth)
+			[abs_depth, sel_candidate_list] = helper.select_abstraction_candidate_nodes(max_depth, bound_min_depth, bound_max_depth)
 			print("Candidate List Length:", len(sel_candidate_list))
 			if ( len(sel_candidate_list) > 0):
 				print("-----------------------------------")
@@ -346,21 +347,7 @@ def perform_error_analysis(program_argument_list):
 		print("Pred:{pred}\t instab:{instab}".format(pred=D[i][2], instab=D[i][0]))
 
 
-# Algorithm to find high condition number causing input intervals
-# Form a list of output nodes
-# For each node in the AST of the output node, 
-# 	generate expressions
-# Starting from the bottom up for each node,
-# 	generate atomic condition expression
-#	Search for narrowest input intervals (For now assume narrowest means an interval of 1.0) giving a high atomic 
-#	condition number by subdividing input intervals in some combination.
-#	Strategy to find intervals:
-#	If unary operator, use binary search to locate the interval giving a high atomic condition number.
-#	If binary operator, try a combination of the intervals of the two operands (lower half, lower half), 
-#																			   (lower half, higher half),
-#																			   (higher half, lower half),
-#																			   (higher half, higher half)
-#	and narrow down on the two intervals
+
 
 
 # Algorithm to examine stability
@@ -405,8 +392,6 @@ def perform_stability_analysis(program_argument_list):
 	# Debugging print statements
 	# print("Atomic Condition Numbers")
 	# print(stability_analyzer.atomic_condition_numbers)
-
-
 
 	print("Completed examining stability...")
 	return
@@ -459,7 +444,7 @@ if __name__ == "__main__":
 	#helper.PreProcessAST()
 	pr2 = time.time()
 	##print("\nAfter:", Globals.global_symbol_table[0]._symTab.keys(),"\n\n")
-	#opList = helper.get_opList(DIV)
+	#opList = helper.filter_nodes_with_operation_within_depth(DIV)
 	#D = helper.find_common_dependence(opList, 5, 40)
 	#for k,v in D.items():
 	#	print(v)

@@ -1,4 +1,4 @@
-from ops_def import _atomic_condition_ops
+from ops_def import _atomic_condition_ops, _atomic_condition_danger_zones
 from collections import defaultdict
 from utils import isConst
 from PredicatedSymbol import SymTup, Sym
@@ -92,7 +92,7 @@ class StabilityAnalysis(object):
         Nothing
             By the end, the recursive DFS traversal of all output nodes is completed.
         """
-        print("Beginning generating atomic condition expressions")
+        print("Beginning generating atomic condition expressions...")
 
         # Debugging print statments
         # print("\nAtomic condition of:")
@@ -106,9 +106,8 @@ class StabilityAnalysis(object):
             else:
                 self.generate_atomic_conditions(node)
 
-        print("Completed generating atomic condition expressions")
+        print("Completed generating atomic condition expressions...")
 
-    # For a node
     def determine_stability(self, node):
         """
         Traverses the "node" subtree in an INORDER manner checking stability at each node. Determines if worst case
@@ -131,8 +130,8 @@ class StabilityAnalysis(object):
                 pass
             elif len(child.children) == 0:
                 self.stability_checked[child.depth].add(child)
-            else:
-                self.determine_stability(child)
+            elif not self.determine_stability(child):
+                return False
 
         # Invoke gelpia optimizer to determine conditioning
         operand_list = [child.f_expression for child in node.children]
@@ -158,13 +157,11 @@ class StabilityAnalysis(object):
                 # print(val)
 
                 if extremum > self.stability_threshold:
-                    print("-----------------------------------------------------------------------------------------")
-                    print("Main Output:")
-                    print("Atomic condition: " + str(symbolic_expression))
-                    print("Atomic condition number = " + str(extremum))
                     print("Program is unstable at")
                     print(node)
                     print("The expression is:" + str(node.f_expression))
+                    print("Atomic condition: " + str(symbolic_expression))
+                    print("Atomic condition number = " + str(extremum))
                     if self.analysis_options.find_ill_conditioning_input:
                         input_interval_dict = defaultdict(list)
                         for input_variable in symbolic_expression.free_symbols:
@@ -172,17 +169,16 @@ class StabilityAnalysis(object):
                         input_interval_dict = binary_search_for_input_set(symbolic_expression, "<<True>>", "", input_interval_dict, extremum, True)
                         print("Input set triggering this atomic condition number")
                         print(input_interval_dict)
-                        print(
-                            "-----------------------------------------------------------------------------------------")
-                        return False
-                    else:
-                        print(
-                            "-----------------------------------------------------------------------------------------")
-                        return False
+                        print()
+                        print("Advice")
+                        # TODO: child.fexpression is a SymTup so has more than one expression. We select the 1st
+                        #  expression right now but it is not correct. Selection of the correct expression is important
+                        #  for this "Advice". Change this so the correct expression is selected.
+                        print(_atomic_condition_danger_zones[node.token.type]([child.f_expression[0].exprCond[0] for child in node.children]))
+                    return False
 
         self.stability_checked[node.depth].add(node)
         return True
-
 
     def determine_stability_driver(self):
         """
@@ -197,7 +193,7 @@ class StabilityAnalysis(object):
         Nothing
             By the end, the recursive DFS traversal of all output nodes is completed.
         """
-        print("Beginning stability checking")
+        print("Beginning stability checking...")
 
         for node in self.candidate_node_list:
             if self.stability_checked[node.depth].__contains__(node):
@@ -205,10 +201,12 @@ class StabilityAnalysis(object):
             elif isConst(node):
                 self.stability_checked[node.depth].add(node)
             else:
-                if self.determine_stability(node):
-                    print("-----------------------------------------------------------------------------------------")
-                    print("Main Output:")
-                    print("Following node is stable \n" + str(node))
-                    print("-----------------------------------------------------------------------------------------")
+                print("-----------------------------------------------------------------------------------------")
+                print("Main Output:")
+                if not self.determine_stability(node):
+                    print("Following node IS NOT stable \n" + str(node))
+                else:
+                    print("Following node IS stable \n" + str(node))
+                print("-----------------------------------------------------------------------------------------")
 
-        print("Completed stability checking")
+        print("Completed stability checking...")

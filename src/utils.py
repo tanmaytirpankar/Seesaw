@@ -200,6 +200,8 @@ def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func->
 	
 	max_lower = Value("d", float("nan"))
 	max_upper = Value("d", float("nan"))
+	manager = Manager()
+	inputs_for_max = manager.dict()
 	max_solver_calls = Value("i", 0)
 	#print("ID:",Globals.gelpiaID, "\t Finding max, min\n")
 	p = Process(target=gelpia.find_max, args=(gstr_expr,
@@ -216,9 +218,11 @@ def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func->
 	                                          gelpia_rust_executable,
 											  False, #drop constraints
 	                                          max_lower,
-	                                          max_upper, max_solver_calls))
+	                                          max_upper,
+											  inputs_for_max,
+											  max_solver_calls))
 	p.start()
-	min_lower, min_upper, min_solver_calls = gelpia.find_min(gstr_expr,
+	min_lower, min_upper, inputs_for_min, min_solver_calls = gelpia.find_min(gstr_expr,
 	                                       gelpia_epsilons,
 	                                       gelpia_timeout,
 	                                       gelpia_grace,
@@ -288,7 +292,7 @@ def invoke_gelpia_herror(symExpr, inputStr, label="Func-> Dur:"):
 	                                          max_lower,
 	                                          max_upper))
 	p.start()
-	min_lower, min_upper = gelpia.find_min(str_expr,
+	min_lower, min_upper, inputs, solver_calls = gelpia.find_min(str_expr,
 	                                       gelpia_epsilons,
 	                                       10,
 	                                       gelpia_grace,
@@ -313,7 +317,28 @@ def invoke_gelpia_herror(symExpr, inputStr, label="Func-> Dur:"):
 
 def extremum_of_symbolic_expression(symbolic_expression, conditional_expression, external_constraints, input_string,
 									max=True):
+	"""
+	Sets up input for gelpia and invokes it to find extremum and corresponding input interval.
 
+	Parameters
+	----------
+	symbolic_expression : TODO: Fill this
+		Symbolic expression that gives the optimal value.
+	conditional_expression : TODO: Fill this
+		Conditional expression that acts as a constraint on the domain
+	external_constraints : TODO: Fill this
+		Constraints provided by the user that may narrow the domain
+	input_string : string
+		Input interval string
+	max : bool
+		Boolean value determining whether to return upper or lower bound of extrema
+
+	Returns
+	-------
+	extrema_lower_bound or extrema_lower_bound : float
+		Extremum value
+	"""
+	# Print statements for debugging
 	# print("Invoking Gelpia")
 	# print("Symbolic Expression")
 	# print(symbolic_expression)
@@ -628,54 +653,134 @@ def extract_partialAST(NodeList):
 
 	return parent_dict
 
-# subdivide interval into two halves
-# if the extremum lessens on lower half,
-# 	recurse on upper half
-# else if the extremum remains the same on lower half (else case since we have asser computed_extremum <= extremum),
-#	if the extremum lessens on upper half
-#		recurse on lower half
-# return interval
 
-# terminate recursion when input variable interval is smaller than some threshold
-# set the interval for the respective input variable and return the new input set to the top of the search call stack
-def binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, input_interval_dict, extremum, input_variable, max=True):
-	if input_interval_dict[input_variable][1] - input_interval_dict[input_variable][0] < 2**-53:
+def binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, input_interval_dict,
+							   extremum, input_variable, max=True):
+	"""
+	[Recursive] Binary search method to find the narrowest interval for input_variable corresponding to extremum of
+	symbolic_expression.
+
+	Algorithm
+	---------
+	Return original interval if input variable interval is smaller than some threshold
+	Select lower half of interval
+
+	if the extremum changes on lower half
+		recurse on upper half and return result
+	if extremum remains the same on upper half
+		return original interval
+
+	Parameters
+	----------
+	symbolic_expression : TODO: Fill this
+		Symbolic expression that gives the optimal value.
+	conditional_expression : TODO: Fill this
+		Conditional expression that acts as a constraint on the domain
+	external_constraints : TODO: Fill this
+		Constraints provided by the user that may narrow the domain
+	input_interval_dict : dict
+		Dictionary(input_variable -> interval_tuple)
+	extremum : float
+		Optimal value of symbolic_expression within given domain following all constraints.
+	input_variable : TODO: Fill this
+		Input variable being worked on
+	max : bool
+		Determines whether to find max or min value of symbolic_expression
+
+	Returns
+	-------
+	input_interval_dict : dict
+		Dictionary(input_variable -> interval_tuple) of inputs with the newly found narrowest interval for input_variable
+	"""
+	# Threshold to stop reducing interval size and quit search. Ideally should be machine epsilon for the float type used.
+	interval_difference_threshold = 2**-51
+
+	# Base case of recursion: If interval is smaller than specified threshold
+	if input_interval_dict[input_variable][1] - input_interval_dict[input_variable][0] < interval_difference_threshold:
 		return input_interval_dict
+
+	# Mid-value
 	interval_mid = (input_interval_dict[input_variable][0]+input_interval_dict[input_variable][1]) / 2
 	# print(input_interval_dict)
 
-	# TODO: Optimize this part to only change the input_variable interval instead of creating the input string each time
+	# For loop for the two halves of interval, starting with the lower half, so we modify the upper bound (index 1) first.
 	for index in range(2)[::-1]:
+		# Deep copying input_interval_dict since we want to retain the original candidate_interval_dict
 		candidate_interval_dict = copy.deepcopy(input_interval_dict)
+
+		# Selecting Upper/Lower half of interval by modifying the interval bound appropriately. index=1 selects lower half
+		# in which case we subtract the smallest interval difference as well to avoid common values in upper and lower halves
 		candidate_interval_dict[input_variable][index] = interval_mid
+		if index == 1:
+			candidate_interval_dict[input_variable][index] -= interval_difference_threshold
+
 		input_variable_string_list = []
 		for variable, interval in candidate_interval_dict.items():
 			input_variable_string_list += [variable, " = ", str(interval), ";"]
 		input_string = "".join(input_variable_string_list)
-		# print("Input sent")
-		# print(candidate_interval_dict)
+
+		# Computing extremum of narrowed interval
+		print("Input sent")
+		print(candidate_interval_dict)
 		computed_extremum = extremum_of_symbolic_expression(symbolic_expression, "<<True>>", "", input_string, True)
-		# print(computed_extremum)
-		# print(interval_mid)
-		assert computed_extremum <= extremum
-		if computed_extremum < extremum:
+		print(computed_extremum)
+		print(interval_mid)
+
+		# Check to ensure the extremum does not beat the original extremum
+		assert computed_extremum <= extremum if max else computed_extremum >= extremum
+		# Check to ensure the extremum remains the same for the upper half
+		if not index:
+			assert computed_extremum == extremum if max else computed_extremum == extremum
+
+		# Recursive section
+		# If lower half changes extremum, we recurse on upper half else we continue to the next iteration (Checking if
+		# upper half changes extremum).
+		# NOTE: It can NEVER happen that upper half changes extremum. Since upper half is checked only when lower half
+		# changes the extremum. So the block of code inside IF condition should NEVER execute for the 2nd iteration.
+		# The above assert statement guards this case.
+		if (max and computed_extremum < extremum) or (not max and computed_extremum > extremum):
 			candidate_interval_dict = copy.deepcopy(input_interval_dict)
+			# Modifying lower bound of interval (selects upper half)
 			candidate_interval_dict[input_variable][int(not index)] = interval_mid
-			return binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, candidate_interval_dict, extremum, input_variable, max=True)
+			return binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints,
+											  candidate_interval_dict, extremum, input_variable, max=True)
 
 	return input_interval_dict
 
 
+def binary_search_for_input_set(symbolic_expression, conditional_expression, external_constraints, input_interval_dict,
+								extremum, max=True):
+	"""
+	Searches for narrowest box of input intervals giving optimal value of 'symbolic_expression' using binary search
+	method on each input variable.
 
-# For each input variable
-#	Perform binary search for input interval that keeps the extremum unchanged
-def binary_search_for_input_set(symbolic_expression, conditional_expression, external_constraints, input_interval_dict, extremum, max=True):
+	Parameters
+	----------
+	symbolic_expression : TODO: Fill this
+		Symbolic expression that gives the optimal value.
+	conditional_expression : TODO: Fill this
+		Conditional expression that acts as a constraint on the domain
+	external_constraints : TODO: Fill this
+		Constraints provided by the user that may narrow the domain
+	input_interval_dict : dict
+		Dictionary(input_variable -> interval_tuple)
+	extremum : float
+		optimal value of symbolic_expression within given domain following all constraints.
+	max : bool
+		Determines whether to find max or min value of symbolic_expression
+
+	Returns
+	-------
+	(Symbol, tuple)
+		Dictionary(input_variable -> interval_tuple) of narrowest box of inputs
+	"""
 	candidate_interval_dict = input_interval_dict
 
+	# Performing binary search for optimal value on each input variable, propagating the narrowest intervals found to
+	# the next iteration
 	for input_variable, interval in input_interval_dict.items():
 		print(input_variable)
-		print(candidate_interval_dict)
+		# print(candidate_interval_dict)
 		candidate_interval_dict = binary_search_on_input_var(symbolic_expression, conditional_expression, external_constraints, candidate_interval_dict, extremum, input_variable, max)
-
 
 	return candidate_interval_dict
