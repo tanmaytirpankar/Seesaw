@@ -82,3 +82,7 @@ scopeID = -1 # increment , then use
 bvar = sympy.var('bv')
 __T__ = (bvar).subs({bvar:True})
 __F__ = (bvar).subs({bvar:False})
+
+# List of lists containing two symbolic expressions and an inequality
+# eg: [[x+y, y, '!='], [10*x+4*y, x^2+5*x, '<=']]
+stability_damaging_constraints = []

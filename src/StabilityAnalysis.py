@@ -1,3 +1,5 @@
+import sympy.logic.boolalg
+
 from ops_def import _atomic_condition_ops, _atomic_condition_danger_zones
 from collections import defaultdict
 from utils import isConst
@@ -21,6 +23,9 @@ class StabilityAnalysis(object):
     parent_dict :
     cond_syms :
     atomic_condition_expression_generated :
+    stability_checked :
+    stability_threshold :
+    node_visited :
     """
     def __init__(self, analysis_options, candidate_node_list, input_node_list):
         self.analysis_options = analysis_options
@@ -32,6 +37,8 @@ class StabilityAnalysis(object):
         self.atomic_condition_expression_generated = defaultdict(set)
         self.stability_checked = defaultdict(set)
         self.stability_threshold = 1000
+
+        self.node_visited = defaultdict(set)
 
     def generate_atomic_conditions(self, node):
         """
@@ -174,7 +181,15 @@ class StabilityAnalysis(object):
                         # TODO: child.fexpression is a SymTup so has more than one expression. We select the 1st
                         #  expression right now but it is not correct. Selection of the correct expression is important
                         #  for this "Advice". Change this so the correct expression is selected.
-                        print(_atomic_condition_danger_zones[node.token.type]([child.f_expression[0].exprCond[0] for child in node.children]))
+
+                        constraint = _atomic_condition_danger_zones[node.token.type](
+                            [child.f_expression[0].exprCond[0] for child in node.children])
+                        if len(constraint) == 0:
+                            print("No danger zone")
+                        elif len(constraint) == 1:
+                            print(constraint[0])
+                        elif len(constraint) == 2:
+                            print(str(constraint[0]) + " and " + str(constraint[1]))
                     return False
 
         self.stability_checked[node.depth].add(node)
@@ -210,3 +225,63 @@ class StabilityAnalysis(object):
                 print("-----------------------------------------------------------------------------------------")
 
         print("Completed stability checking...")
+
+    def generate_stability_damaging_constraints(self, node):
+        """
+        Generates constraints from denominators of atomic conditions that could cause cancellations leading to high
+        atomic condition numbers.
+
+         Parameters
+        ----------
+        node : node type
+            Any node
+
+        Returns
+        -------
+        Nothing
+            Populates Globals.stability_damaging_constraints
+        """
+        for child in node.children:
+            if self.node_visited[child.depth].__contains__(child):
+                pass
+            elif len(child.children) == 0:
+                self.node_visited[child.depth].add(child)
+            else:
+                self.generate_stability_damaging_constraints(child)
+
+        constraint = _atomic_condition_danger_zones[node.token.type](
+            [child.f_expression[0].exprCond[0] for child in node.children])
+        if len(constraint) == 1:
+            if constraint[0] != True or constraint[0] != False:
+                Globals.stability_damaging_constraints.append(constraint[0])
+        elif len(constraint) == 2:
+            if constraint[0] != True or constraint[0] != False:
+                Globals.stability_damaging_constraints.append(constraint[0])
+            if constraint[1] != True or constraint[0] != False:
+                Globals.stability_damaging_constraints.append(constraint[1])
+        return
+
+    def generate_stability_damaging_constraints_driver(self):
+        """
+        Driver for generating stability damaging constraints
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Nothing
+            Populates Globals.stability_damaging_constraints
+        """
+
+        for node in self.candidate_node_list:
+            if self.node_visited[node.depth].__contains__(node):
+                pass
+            elif isConst(node):
+                self.node_visited[node.depth].add(node)
+            else:
+                self.generate_stability_damaging_constraints(node)
+
+        for i in range(len(Globals.stability_damaging_constraints)):
+            print(Globals.stability_damaging_constraints[i])

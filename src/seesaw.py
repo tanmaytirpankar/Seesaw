@@ -73,6 +73,11 @@ def create_parser():
 						help='Examine stability of algorithm/program',
 						default=False,
 						action='store_true')
+	parser.add_argument('-g', '--generate_stability_damaging_constraints',
+						help='Generates constraints from denominators of atomic conditions that could cause cancellations'
+							 'leading to high atomic condition numbers.',
+						default=False,
+						action='store_true')
 	parser.add_argument('-e', '--error_analysis',
 						help='Performs Error Analysis which includes finding worst case error and examining instability.',
 						default=False,
@@ -388,6 +393,9 @@ def perform_stability_analysis(program_argument_list):
 	stability_analyzer.generate_atomic_conditions_driver()
 	# print(stability_analyzer.atomic_condition_numbers)
 	stability_analyzer.determine_stability_driver()
+
+	if program_argument_list.generate_stability_damaging_constraints:
+		stability_analyzer.generate_stability_damaging_constraints_driver()
 
 	# Debugging print statements
 	# print("Atomic Condition Numbers")

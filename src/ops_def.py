@@ -1,4 +1,4 @@
-#from sympy import *
+from sympy import S, Ne, pi, Symbol
 from symengine import *
 import symengine as seng
 import math as mt
@@ -156,16 +156,17 @@ _atomic_condition_ops = {
 }
 
 _atomic_condition_danger_zones = {
-			PLUS	:	lambda operand_list : str(operand_list[0]) + " != " + str(-operand_list[1]),
-			MINUS	:	lambda operand_list : str(operand_list[0]) + " != " + str(operand_list[1]),
-			MUL		:	lambda operand_list : "No danger zone",
-			DIV		:	lambda operand_list : "No danger zone",
-			SQRT	:	lambda operand_list : "No danger zone",
-			EXP		:	lambda operand_list : str(operand_list[0]) + " -> +inf or -inf",
-			SIN		:	lambda operand_list : str(operand_list[0]) + " -> n*pi where n is any integer",
-			ASIN	:	lambda operand_list : str(operand_list[0]) + " -> -1 from positive side or 1 from negative side",
-			COS		:	lambda operand_list : str(operand_list[0]) + " -> n*pi + pi/2 where n is any integer",
-			TAN		:	lambda operand_list : str(operand_list[0]) + " -> n*pi / 2 where n is any integer",
+			PLUS	: lambda operand_list: [Ne(operand_list[0], -operand_list[1])],
+			MINUS	: lambda operand_list: [Ne(operand_list[0], operand_list[1])],
+			MUL		: lambda operand_list: [],
+			DIV		: lambda operand_list: [],
+			SQRT	: lambda operand_list: [],
+			EXP		: lambda operand_list: [Ne(operand_list[0], S.Infinity), Ne(operand_list[0], S.NegativeInfinity)],
+			SIN		: lambda operand_list: [Ne(operand_list[0], Symbol('n')*pi)],
+			# TODO: -> -1 from positive side or 1 from negative side
+			ASIN	: lambda operand_list: [Ne(operand_list[0], S.One), Ne(operand_list[0], S.NegativeOne)],
+			COS		: lambda operand_list: [Ne(operand_list[0], Symbol('n')*pi + S.Half*pi)],
+			TAN		: lambda operand_list: [Ne(operand_list[0], S.Half*Symbol('n')*pi)],
 }
 
 
