@@ -1,10 +1,10 @@
-import sympy.logic.boolalg
-
+from RandomTesting import BinaryGuidedRandomTesting
 from ops_def import _atomic_condition_ops, _atomic_condition_danger_zones
 from collections import defaultdict
 from utils import isConst
 from PredicatedSymbol import SymTup, Sym
 from utils import extract_input_dep, extremum_of_symbolic_expression, binary_search_for_input_set
+from sympy import Symbol
 import symengine
 import helper
 import Globals
@@ -186,9 +186,10 @@ class StabilityAnalysis(object):
                             [child.f_expression[0].exprCond[0] for child in node.children])
                         if len(constraint) == 0:
                             print("No danger zone")
-                        elif len(constraint) == 1:
+                        elif len(constraint) == 1 and (constraint[0] != True or constraint[0] != False):
                             print(constraint[0])
-                        elif len(constraint) == 2:
+                        elif len(constraint) == 2 and (constraint[0] != True or constraint[0] != False) and \
+                            (constraint[1] != True or constraint[1] != False):
                             print(str(constraint[0]) + " and " + str(constraint[1]))
                     return False
 
@@ -217,12 +218,15 @@ class StabilityAnalysis(object):
                 self.stability_checked[node.depth].add(node)
             else:
                 print("-----------------------------------------------------------------------------------------")
-                print("Main Output:")
+                print("----------------------------- Stability Determination Start -----------------------------")
+                print(":")
                 if not self.determine_stability(node):
                     print("Following node IS NOT stable \n" + str(node))
                 else:
                     print("Following node IS stable \n" + str(node))
+                print("------------------------------ Stability Determination End ------------------------------")
                 print("-----------------------------------------------------------------------------------------")
+                print()
 
         print("Completed stability checking...")
 
@@ -283,5 +287,40 @@ class StabilityAnalysis(object):
             else:
                 self.generate_stability_damaging_constraints(node)
 
+        # Printing stability damaging constraints
+        # print("Stability damaging zones")
+        # for i in range(len(Globals.stability_damaging_constraints)):
+        #     print(Globals.stability_damaging_constraints[i])
+
+        print("----------------------------------------------------------------------------------------")
+        print("---------------------- Search for Stability Damaging Inputs Start ----------------------")
+
+        # Looping through all collected Constraints
         for i in range(len(Globals.stability_damaging_constraints)):
-            print(Globals.stability_damaging_constraints[i])
+            # Collecting data to invoke Binary Guided Random Testing
+            input_configuration = {}
+            for key in (Globals.stability_damaging_constraints[i].lhs-Globals.stability_damaging_constraints[i].rhs).free_symbols:
+                input_configuration[key] = Globals.inputVars[symengine.var(str(key))]['INTV']
+                if Symbol('n') in (Globals.stability_damaging_constraints[i].lhs-Globals.stability_damaging_constraints[i].rhs).free_symbols:
+                    input_configuration[Symbol('n')] = [1.0, 1.0]
+            symbolic_expression = (Globals.stability_damaging_constraints[i].lhs-Globals.stability_damaging_constraints[i].rhs)
+
+            # Invoking BGRT
+            bad_inputs_finder = BinaryGuidedRandomTesting(input_configuration, symbolic_expression,
+                                                          configuration_generation_factor=3)
+            bad_input_boxes, best_values = bad_inputs_finder.binary_guided_random_testing()
+
+            # Printing the output
+            assert len(bad_input_boxes) == len(best_values)
+            print("Symbolic Expression:" + str(Globals.stability_damaging_constraints[i].lhs -
+                                               Globals.stability_damaging_constraints[i].rhs))
+            for j in range(len(bad_input_boxes)):
+                print(str(j).rjust(3) + ": value: " + str(best_values[j]).rjust(23) + ", [", end='')
+                for key, val in bad_input_boxes[j].items():
+                    print(str(key) + ": [" + str(val[0]).ljust(23) + ", " + str(val[1]).ljust(23) + "], ", end='')
+                print(']')
+            print()
+
+        print("----------------------- Search for Stability Damaging Inputs End -----------------------")
+        print("----------------------------------------------------------------------------------------")
+        print()

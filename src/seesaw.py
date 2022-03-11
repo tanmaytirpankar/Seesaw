@@ -18,6 +18,7 @@ from StabilityAnalysis import StabilityAnalysis
 
 import logging
 
+
 def create_parser():
 	"""
 	Creates a command line parser for Seesaw
