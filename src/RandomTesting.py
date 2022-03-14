@@ -1,4 +1,4 @@
-from sympy import Symbol, sin
+from sympy import Symbol, sin, parse_expr
 from sympy.utilities import lambdify
 from random import uniform, random
 from sys import float_info
@@ -14,7 +14,7 @@ class RandomTesting(object):
     ----------
     input_intervals : dict
             Dictionary(Symbol -> list[]) of input intervals.
-    symbolic_expression :
+    function :
         Symbolic Expression
     target_value : float
         Output value of the symbolic expression for which we need to find inputs.
@@ -103,6 +103,11 @@ class BinaryGuidedRandomTesting(RandomTesting):
 
     Methods
     -------
+    binary_guided_random_testing
+    generate_configurations
+    partition_input_box
+    evaluate
+    print_output
 
     """
     def __init__(self, input_intervals, symbolic_expression, target_value=0, distant_value=float_info.max,
@@ -343,7 +348,9 @@ class BinaryGuidedRandomTesting(RandomTesting):
 
     def evaluate(self, input_intervals):
         """
-        Evaluates the symbolic expression with given values and returns result closest to target
+        Evaluates the symbolic expression by drawing inputs from the given input intervals randomly and returns result
+        closest to target. The inputs are drawn from the half-open interval [low, high + 2**-53)
+        For a set of variables X, selects inputs for var_i in X such that var_i_lower<=var_i<var_i_upper+2**-53
 
         Parameters
         ----------
@@ -376,7 +383,8 @@ class BinaryGuidedRandomTesting(RandomTesting):
 
         # Random sampling sampling_factor-1 more times
         for i in range(self.sampling_factor):
-            parameter_values = [uniform(interval[0], interval[1]) for var, interval in input_intervals.items()]
+            # Values are drawn from the half-open interval [low, high + 2**-53)
+            parameter_values = [uniform(interval[0], interval[1] + 2**-53) for var, interval in input_intervals.items()]
             new_value = lambda_function(*parameter_values)
             if abs(new_value-self.target_value) < smallest_difference:
                 smallest_difference = abs(new_value-self.target_value)
@@ -385,10 +393,36 @@ class BinaryGuidedRandomTesting(RandomTesting):
 
         return best_value
 
+    def print_output(self, narrowed_inputs, best_values_found):
+        """
+        Prints the output of BGRT.
+
+        Parameters
+        ----------
+        narrowed_inputs : list
+            List of input configurations that may or may not be better than initial input configuration.
+        best_values_found : list
+            List of best values found for the given function on random sampling from the corresponding configuration
+            from list of input configurations
+
+        Returns
+        -------
+            Nothing
+        """
+        assert len(narrowed_inputs) == len(best_values_found)
+        print("Symbolic Expression:" + str(self.function))
+        for j in range(len(narrowed_inputs)):
+            print(str(j).rjust(3) + ": value: " + str(best_values_found[j]).rjust(23) + ", [", end='')
+            for key, val in narrowed_inputs[j].items():
+                print(str(key) + ": [" + str(val[0]).ljust(23) + ", " + str(val[1]).ljust(23) + "], ", end='')
+            print(']')
+        print()
+
+
 def main():
-    parser = ArgumentParser(description='Searching for input intervals of a symbolic expression close to some target.'
-                                        'Note: The input interval obtained may not necessarily contain the target value')
-    parser.add_argument('-e',  '--symbolic_expression',
+    parser = ArgumentParser(description="Searching for input intervals of a symbolic expression close to some target. "
+                                        "Note: The input interval obtained may not necessarily contain the target value")
+    parser.add_argument('-e',  "--symbolic_expression",
                         help="An expression",
                         required=True,
                         type=str)
@@ -421,7 +455,24 @@ def main():
                         type=float, default=0.05)
     arguments = parser.parse_args()
 
-    # if arguments.bgrt:
+    # Gathering inputs for random testing
+    input_configuration = arguments.input_intervals
+    for value in input_configuration.values():
+        assert len(value) == 2
+    symbolic_expression = parse_expr(arguments.symbolic_expression)
+    for variable in symbolic_expression.free_symbols:
+        assert Symbol(variable) in input_configuration
+
+    # Search-algorithm selector
+    if arguments.bgrt:
+        bgrt_object = BinaryGuidedRandomTesting(input_configuration, symbolic_expression, arguments.target_value,
+                                                arguments.distant_value, arguments.sampling_factor,
+                                                arguments.termination_factor_value,
+                                                arguments.configuration_generation_factor,
+                                                arguments.restart_probability)
+
+        narrowed_inputs, best_values_found = bgrt_object.binary_guided_random_testing()
+        bgrt_object.print_output(narrowed_inputs, best_values_found)
 
 
 if __name__ == "__main__":

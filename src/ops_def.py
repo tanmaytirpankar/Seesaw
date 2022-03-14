@@ -1,5 +1,6 @@
 from sympy import S, Ne, pi, Symbol
-from symengine import *
+
+# Do not import everything from a library. Causing confusion between symengine and sympy
 import symengine as seng
 import math as mt
 import sys

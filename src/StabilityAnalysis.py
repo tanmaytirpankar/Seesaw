@@ -311,15 +311,7 @@ class StabilityAnalysis(object):
             bad_input_boxes, best_values = bad_inputs_finder.binary_guided_random_testing()
 
             # Printing the output
-            assert len(bad_input_boxes) == len(best_values)
-            print("Symbolic Expression:" + str(Globals.stability_damaging_constraints[i].lhs -
-                                               Globals.stability_damaging_constraints[i].rhs))
-            for j in range(len(bad_input_boxes)):
-                print(str(j).rjust(3) + ": value: " + str(best_values[j]).rjust(23) + ", [", end='')
-                for key, val in bad_input_boxes[j].items():
-                    print(str(key) + ": [" + str(val[0]).ljust(23) + ", " + str(val[1]).ljust(23) + "], ", end='')
-                print(']')
-            print()
+            bad_inputs_finder.print_output(bad_input_boxes, best_values)
 
         print("----------------------- Search for Stability Damaging Inputs End -----------------------")
         print("----------------------------------------------------------------------------------------")
