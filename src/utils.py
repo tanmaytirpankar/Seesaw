@@ -189,6 +189,7 @@ def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func->
 	
 	max_lower = Value("d", float("nan"))
 	max_upper = Value("d", float("nan"))
+	max_optima = Manager().dict()
 	max_solver_calls = Value("i", 0)
 	#print("ID:",Globals.gelpiaID, "\t Finding max, min\n")
 	p = Process(target=gelpia.find_max, args=(gstr_expr,
@@ -205,9 +206,9 @@ def invoke_gelpia(symExpr, cond_expr, externConstraints, inputStr, label="Func->
 	                                          gelpia_rust_executable,
 											  False, #drop constraints
 	                                          max_lower,
-	                                          max_upper, max_solver_calls))
+	                                          max_upper, max_optima, max_solver_calls))
 	p.start()
-	min_lower, min_upper, min_solver_calls = gelpia.find_min(gstr_expr,
+	min_lower, min_upper, min_optima, min_solver_calls = gelpia.find_min(gstr_expr,
 	                                       gelpia_epsilons,
 	                                       gelpia_timeout,
 	                                       gelpia_grace,
