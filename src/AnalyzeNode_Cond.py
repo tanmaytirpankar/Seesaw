@@ -581,7 +581,7 @@ class AnalyzeNode_Cond(object):
 				(cond_expr,free_symbols)	=	self.parse_cond(cond)
 				print("PROCESS_EXPRESSION_LOC1")
 				print("Outside:", cond_expr)
-				print("Expr:", expr)
+				# print("Expr:", expr)
 				[errIntv, res_avg_maxres] = self.process_expression( expr, cond_expr, free_symbols, get_stats=Globals.argList.stat_err_enable or Globals.argList.stat )
 				err = max([abs(i) for i in errIntv]) if errIntv is not None else 0
 				print("STAT: SP:{err}, maxres:{maxres}, avg:{avg}".format(\
