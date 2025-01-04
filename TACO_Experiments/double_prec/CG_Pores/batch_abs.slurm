@@ -13,7 +13,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # ino Abs
-python3 ../../../src/satire.py \
+python3 ../../../src/satire+.py \
         --std \
 		--file CG_Pores_noError_K20_N30_E0.0.txt \
 		--logfile CG_Pores_noError_K20_N30_E0.0_abs-serial_noAbs.pylog \

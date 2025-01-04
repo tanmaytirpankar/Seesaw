@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # no-Abs window : 
-python3 ../../../src/satire.py \
+python3 ../../../src/satire+.py \
         --std \
 		--file fft_4096pt_sat.txt \
 		--logfile fft_4096pt_sat_abs-serial_noAbs.pylog \

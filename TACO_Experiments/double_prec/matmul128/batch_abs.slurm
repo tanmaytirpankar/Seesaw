@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # No-Abs window
-python3 ../../../src/satire.py \
+python3 ../../../src/satire+.py \
         --std \
 		--compress \
 		--file matmul_128_128_128.txt \
