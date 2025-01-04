@@ -57,6 +57,7 @@ class AnalyzeNode_Cond(object):
 
 		self.results = {}
 		self.bwdDeriv = {}
+		self.bwdDerivProdTypeCastRnd = {}
 		self.externConstraints = ""
 		self.externFreeSymbols = set()
 		self.cond_syms = set()
@@ -94,6 +95,7 @@ class AnalyzeNode_Cond(object):
 	def __setup_outputs__(self):
 		for node in self.trimList:
 			self.bwdDeriv[node] = {node: SymTup((Sym(1,Globals.__T__), ))}
+			self.bwdDerivProdTypeCastRnd[node] = {node: SymTup((Sym(1,Globals.__T__), ))}
 			self.parentTracker[node] = len(self.parent_dict[node])
 
 	def __init_workStack__(self):
@@ -131,9 +133,15 @@ class AnalyzeNode_Cond(object):
 					for outVar in outList:
 						sti = time.time()
 						self.bwdDeriv[child_node] = self.bwdDeriv.get(child_node, {})
+						self.bwdDerivProdTypeCastRnd[child_node] = self.bwdDerivProdTypeCastRnd.get(child_node, {})
 						self.bwdDeriv[child_node][outVar] = self.condmerge(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
 							self.bwdDeriv[node][outVar] * \
 							SymTup((Sym(1.0, node.nodeList[i][1]),)),trim=True))
+						self.bwdDerivProdTypeCastRnd[child_node][outVar] = self.condmerge(self.bwdDerivProdTypeCastRnd[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
+							self.bwdDeriv[child_node][outVar] * \
+							(SymTup((Sym(node.rnd, Globals.__T__),)) \
+							if node.rnd == pow(2, -24 + 53) and child_node.rnd == 1.00
+							else SymTup((Sym(1.0, Globals.__T__),))),trim=True))
 						eti = time.time()
 						#print("Lift-op:One bak prop time = ", eti-sti)
 					self.next_workList.append(child_node)
@@ -145,15 +153,24 @@ class AnalyzeNode_Cond(object):
 					for outVar in outList:
 						sti = time.time()
 						self.bwdDeriv[child_node] = self.bwdDeriv.get(child_node, {})
+						self.bwdDerivProdTypeCastRnd[child_node] = self.bwdDerivProdTypeCastRnd.get(child_node, {})
 						self.bwdDeriv[child_node][outVar] = self.condmerge(self.bwdDeriv[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
 								self.bwdDeriv[node][outVar] * \
 								(SymTup((Sym(0.0, Globals.__T__),)) \
 								 if utils.isConst(child_node) else \
 								 DerivFunc[i](opList)), trim=True))
+						self.bwdDerivProdTypeCastRnd[child_node][outVar] = self.condmerge(self.bwdDerivProdTypeCastRnd[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
+								self.bwdDeriv[child_node][outVar] * \
+								(SymTup((Sym(node.rnd, Globals.__T__),)) \
+						  		if node.rnd == pow(2, -24 + 53) and child_node.rnd == 1.00
+						  		else SymTup((Sym(1.0, Globals.__T__),))), trim=True))
+
 						eti = time.time()
 						#print("One bak prop time = ", eti-sti)
 					self.next_workList.append(child_node)
 					self.parentTracker[child_node] += 1
+					# print(child_node.token, self.bwdDeriv[child_node])
+					# print(child_node.token, self.bwdDerivProdTypeCastRnd[child_node])
 		self.completed1[node.depth].add(node)
 		et = time.time()
 		#print("@node",node.depth, node.f_expression)
@@ -291,8 +308,9 @@ class AnalyzeNode_Cond(object):
 
 	def propagate_symbolic(self, node):
 		for outVar in self.bwdDeriv[node].keys():
+			# print(node.token, "bwdDerivProdTypeCastRnd:", self.bwdDerivProdTypeCastRnd[node][outVar], "expr:", (node.get_noise(node)), "rounding:", node.get_rounding())
 			expr_solve = self.condmerge(\
-							((self.bwdDeriv[node][outVar]) * \
+							((self.bwdDerivProdTypeCastRnd[node][outVar]) * \
 							(node.get_noise(node)) * node.get_rounding())\
 							).__abs__()
 			acc = self.Accumulator.get(outVar, SymTup((Sym(0.0, Globals.__T__),)))
@@ -563,6 +581,7 @@ class AnalyzeNode_Cond(object):
 				(cond_expr,free_symbols)	=	self.parse_cond(cond)
 				print("PROCESS_EXPRESSION_LOC1")
 				print("Outside:", cond_expr)
+				print("Expr:", expr)
 				[errIntv, res_avg_maxres] = self.process_expression( expr, cond_expr, free_symbols, get_stats=Globals.argList.stat_err_enable or Globals.argList.stat )
 				err = max([abs(i) for i in errIntv]) if errIntv is not None else 0
 				print("STAT: SP:{err}, maxres:{maxres}, avg:{avg}".format(\

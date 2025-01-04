@@ -97,7 +97,7 @@ class Sparser(object):
 		if token.type in (INTEGER, FLOAT):
 			self.consume(token.type)
 			return Num(token)
-		elif token.type in (SQRT, SIN, COS, ASIN, TAN, EXP):
+		elif token.type in (SQRT, SIN, COS, ASIN, TAN, EXP, FPTRUNC, FPEXT):
 			self.consume(token.type)
 			node = TransOp(self.arith_factor(), token)
 			self.addDepthInfo(node)

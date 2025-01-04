@@ -47,7 +47,9 @@ _FOPS = {	PLUS	:	lambda L 	:	L[0] + L[1]	,	\
 			ASIN	:	lambda L	:	L[0].__asin__()	,	\
 			COS		:	lambda L	:	L[0].__cos__()	,	\
 			TAN		:	lambda L	: 	L[0].__tan__()	,	\
-			EXP		:	lambda L	:	L[0].__exp__()	\
+			EXP		:	lambda L	:	L[0].__exp__()	,	\
+			FPTRUNC	:	lambda L	:	L[0]	,	\
+			FPEXT	:	lambda L	:	L[0]	,	\
 }
 
 
@@ -124,7 +126,9 @@ _DFOPS = { \
 									(SymTup((Sym(1.0,Globals.__T__),)) - (L[0].__pow__(2))).__sqrt__()], \
 			COS		:	[lambda L : (L[0].__sin__())*(-1.0)], \
 			#TAN		:	[lambda L : L[0].__cos__()/L[0].__sin__()] \
-			TAN		:	[lambda L : SymTup((Sym(1.0,Globals.__T__),))/L[0].__tan__()] \
+			TAN		:	[lambda L : SymTup((Sym(1.0,Globals.__T__),))/L[0].__tan__()] ,\
+			FPTRUNC	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),))], \
+			FPEXT	:	[lambda L : SymTup((Sym(1.0,Globals.__T__),))], \
 }
 
 
@@ -180,7 +184,9 @@ _ALLOC_ULP = { PLUS  : 1.0, \
 			   LOG	 : 2, \
 			   EXP	 : 2, \
 			   IDEN  : 0, \
-			   ID	 : 0
+			   ID	 : 0, \
+			   FPTRUNC : 0, \
+			   FPEXT : 0
 			  }
 
 

@@ -10,6 +10,7 @@ class Slex(Lexer):
 				MINUS, MUL, DIV, SQRT, 		\
 				SIN, ASIN, COS, TAN, COT, COSH, 	\
 				SINH, LOG, EXP, IDEN, 		\
+			   	FPTRUNC, FPEXT,	\
 				EQ, NEQ, \
 				ASSIGN, LPAREN, RPAREN, 	\
 				SLPAREN, SRPAREN, COLON,	\
@@ -58,6 +59,8 @@ class Slex(Lexer):
 	ID['cot']		= 	COT
 	ID['cosh']		= 	COSH
 	ID['sinh']		= 	SINH
+	ID['fptrunc']	= 	FPTRUNC
+	ID['fpext']		= 	FPEXT
 	ID['rnd16'] 	= 	FPTYPE
 	ID['rnd32'] 	= 	FPTYPE # 'rnd64', 'fl16', 'fl32', 'fl64'] = FPTYPE
 	ID['rnd64'] 	= 	FPTYPE
