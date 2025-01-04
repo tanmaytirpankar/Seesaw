@@ -11,7 +11,7 @@
 source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
-python3 ../../src/satire.py \
+python3 ../../../src/satire.py \
         --std \
 		--file Scan_4096.txt \
 		--logfile Scan_4096_abs-serial_noAbs.pylog \

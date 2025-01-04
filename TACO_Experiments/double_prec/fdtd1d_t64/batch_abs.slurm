@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # no-Abs 
-python3 ../../src/satire.py \
+python3 ../../../src/satire.py \
         --std \
 		--compress \
 		--file fdtd1d_64.txt \

@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # no-abs
-python3 ../../src/satire.py \
+python3 ../../../src/satire.py \
         --std \
 		--file advect3d_20.txt \
 		--logfile advect3d_20_abs-serial_noAbs.pylog \

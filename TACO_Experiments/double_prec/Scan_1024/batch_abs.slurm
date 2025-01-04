@@ -11,7 +11,7 @@
 source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 # No-Abs window 
-python3 ../../src/satire.py \
+python3 ../../../src/satire.py \
         --std \
 		--file Scan_1024pt_sat.txt \
 		--logfile Scan_1024pt_sat_abs-serial_noAbs.pylog \

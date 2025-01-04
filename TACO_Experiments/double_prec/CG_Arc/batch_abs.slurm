@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # noAbs
-python3 ../../src/satire.py \
+python3 ../../../src/satire.py \
         --std \
 		--file CG_arc_noErr_K20_N130_E0.0.txt \
 		--logfile CG_arc_noErr_K20_N130_E0.0_abs-serial_noAbs.pylog \
