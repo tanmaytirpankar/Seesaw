@@ -313,7 +313,7 @@ class AnalyzeNode_Cond(object):
 							).__abs__()
 			acc = self.Accumulator.get(outVar, SymTup((Sym(0.0, Globals.__T__),)))
 			if(len(acc) > 10):
-				acc = self.merge_discontinuities(self.condmerge(acc), 1000)
+				acc = self.merge_discontinuities(self.condmerge(acc), 1000000)
 
 			# instability_error(2tup) -> (rigorous err, max_stat_err)
 			#instability_error = (0,0) if not Globals.argList.report_instability else self.add_instability_error(expr_solve)
@@ -326,7 +326,7 @@ class AnalyzeNode_Cond(object):
 					instab_error = instability_error[1]
 			self.InstabilityAccumulator[outVar] = self.InstabilityAccumulator.get(outVar, 0.0) +\
 													instab_error
-			expr_solve = self.merge_discontinuities(expr_solve, 1000)
+			expr_solve = self.merge_discontinuities(expr_solve, 1000000)
 			if Globals.argList.report_instability:
 				Globals.InstabID[node] = instability_error 
 				print("Local instability errors:", instability_error)
@@ -738,7 +738,7 @@ class AnalyzeNode_Cond(object):
 
 
 	#def start(self, bound_min=Globals.argList.mindepth, bound_max=Globals.argList.maxdepth ):
-	def start(self, bound_min=10, bound_max=20 ):
+	def start(self, bound_min=2000000, bound_max=2000010 ):
 	
 		MaxDepth = max([node.depth for node in self.trimList])
 
