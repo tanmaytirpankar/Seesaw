@@ -140,7 +140,7 @@ class AnalyzeNode_Cond(object):
 						self.typeCastRnd[child_node][outVar] = self.condmerge(self.typeCastRnd[child_node].get(outVar, SymTup((Sym(0.0, Globals.__F__),))).__concat__( \
 							(SymTup((Sym(node.rnd, Globals.__T__),)) \
 							if node.rnd == pow(2, -24 + 53) and child_node.rnd == 1.00
-							else SymTup((Sym(0.0, Globals.__T__),))),trim=True))
+							else SymTup((Sym(0.0, Globals.__T__),))), trim=True))
 						eti = time.time()
 						#print("Lift-op:One bak prop time = ", eti-sti)
 					self.next_workList.append(child_node)
@@ -168,7 +168,7 @@ class AnalyzeNode_Cond(object):
 					self.next_workList.append(child_node)
 					self.parentTracker[child_node] += 1
 					# print(child_node.token, self.bwdDeriv[child_node])
-					# print(child_node.token, self.bwdDerivProdTypeCastRnd[child_node])
+					# print(child_node.token, self.typeCastRnd[child_node])
 		self.completed1[node.depth].add(node)
 		et = time.time()
 		#print("@node",node.depth, node.f_expression)
@@ -306,7 +306,7 @@ class AnalyzeNode_Cond(object):
 
 	def propagate_symbolic(self, node):
 		for outVar in self.bwdDeriv[node].keys():
-			# print(node.token, "bwdDerivProdTypeCastRnd:", self.bwdDerivProdTypeCastRnd[node][outVar], "expr:", (node.get_noise(node)), "rounding:", node.get_rounding())
+			# print(node.token, "typeCastRnd:", self.typeCastRnd[node][outVar], "expr:", (node.get_noise(node)), "rounding:", node.get_rounding())
 			expr_solve = self.condmerge(\
 							((self.bwdDeriv[node][outVar]) * \
 							(node.get_noise(node)) * (self.typeCastRnd[node][outVar] + node.get_rounding()))\
