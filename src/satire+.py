@@ -310,7 +310,6 @@ if __name__ == "__main__":
 	
 	#------ Write to File -----------------------------------------
 	helper.writeToFile(results, fout, argList)
-	fout.close()
 
 	end_exec_time = time.time()
 	full_time = end_exec_time - start_exec_time
@@ -321,6 +320,7 @@ if __name__ == "__main__":
 	fout.write("PreProcessing time : {preprocess_time}\n".format(preprocess_time=pr2 - pr1))
 	fout.write("Analysis time : {analysis_time}\n".format(analysis_time=ea2 - ea1))
 	fout.write("Full time : {full_time}\n".format(full_time=end_exec_time - start_exec_time))
+	fout.close()
 
 	logger.info("Optimizer calls : {num_calls}\n".format(num_calls = Globals.gelpiaID))
 	logger.info("Smt calls : {num_calls}\n".format(num_calls = Globals.solver_calls))
