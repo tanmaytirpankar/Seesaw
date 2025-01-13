@@ -37,15 +37,21 @@ for conf in configs:
 		logfile = open(pylogname, 'r').read().splitlines()
 		outfile = open(outlogname, 'r').read().splitlines()
 		AST_DEPTH = list(filter(lambda x: "AST_DEPTH" in x, logfile))
+		VARS = list(filter(lambda x: "VAR" in x, outfile))
 		ABSOLUTE_ERROR = list(filter(lambda x: "ABSOLUTE_ERROR" in x, outfile))
 		EXECUTION_TIME = list(filter(lambda x: "Full time" in x, outfile))
 
-		error = max(list(map(lambda x : float(x.split(':')[1]), ABSOLUTE_ERROR)))
+		error = list(map(lambda x: float(x.split(':')[1]), ABSOLUTE_ERROR))
 
-		print("\t",Message[conf], "->", "execution time :", EXECUTION_TIME[0])
-		print("\t",Message[conf], "->", "absolute error :", error)
-		fout.write("\t {message} -->  execution time = {exec_time}\n".format(message=Message[conf], exec_time=EXECUTION_TIME[0]))
-		fout.write("\t {message} -->  absolute error = {abs_err}\n\n\n".format(message=Message[conf], abs_err=error))
+		print("\t", Message[conf], "->", "execution time :", EXECUTION_TIME[0])
+		fout.write("\t {message} -->  execution time = {exec_time}\n".format(message=Message[conf],
+																			 exec_time=EXECUTION_TIME[0]))
+
+		for (var, err) in zip(VARS, error):
+			print("\t", Message[conf], "->", "var :", var)
+			print("\t", Message[conf], "->", "absolute error :", err)
+			fout.write("\t {message} -->  var = {var}\n".format(message=Message[conf], var=var))
+			fout.write("\t {message} -->  absolute error = {abs_err}\n\n\n".format(message=Message[conf], abs_err=err))
 
 
 fout.close()

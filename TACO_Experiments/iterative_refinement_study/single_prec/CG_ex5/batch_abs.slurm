@@ -14,6 +14,6 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 # noAbs
 python3 ../../../../src/satire+.py \
         --std \
-		--file CG_ex5_noErr_K20_N27.txt \
-		--logfile CG_ex5_noErr_K20_N27_abs-serial_noAbs.pylog \
-		--outfile CG_ex5_noErr_K20_N27_abs-serial_noAbs.out
+		--file CG_ex_5_K20_N27.txt \
+		--logfile CG_ex_5_K20_N27_abs-serial_noAbs.pylog \
+		--outfile CG_ex_5_K20_N27_abs-serial_noAbs.out
