@@ -8,7 +8,7 @@
 #SBATCH -e CG.log
 #set CC=/uufs/chpc.utah.edu/sys/installdir/gcc/5.4.0/bin/gcc
 #set CXX=/uufs/chpc.utah.edu/sys/installdir/dcc/5.4.0/bin/g++
-source /uufs/chpc.utah.edu/common/home/u1014840/local_python3.8
+source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 source /uufs/chpc.utah.edu/common/home/u1014840/local_aliases_kp
 
 testname="eps_CG_arc_noErr_K5_N130_E0.0.txt"
