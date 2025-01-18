@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # Abs window : (10,20)
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--file fft_4096pt_sat.txt \
 		--logfile fft_4096pt_sat_abs-serial_10_20.pylog \
@@ -22,7 +22,7 @@ python3 ../../src/satire.py \
 		--maxdepth 20
 
 # Abs window : (15,25)
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--file fft_4096pt_sat.txt \
 		--logfile fft_4096pt_sat_abs-serial_15_25.pylog \
@@ -31,7 +31,7 @@ python3 ../../src/satire.py \
 		--mindepth 15 \
 		--maxdepth 25
 
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--file fft_4096pt_sat.txt \
 		--logfile fft_4096pt_sat_abs-serial_20_40.pylog \
@@ -41,7 +41,7 @@ python3 ../../src/satire.py \
 		--maxdepth 40
 
 # no-Abs window : 
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--file fft_4096pt_sat.txt \
 		--logfile fft_4096pt_sat_abs-serial_noAbs.pylog \

@@ -12,7 +12,7 @@ source /uufs/chpc.utah.edu/common/home/u1260704/Tools/Seesaw/Seesaw_CHPC.env
 
 
 # Abs window : (10,20)
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--compress \
 		--file ccsd_type2_var_1.txt \
@@ -23,7 +23,7 @@ python3 ../../src/satire.py \
 		--maxdepth 20
 
 # Abs window : (15,25)
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--compress \
 		--file ccsd_type2_var_1.txt \
@@ -34,7 +34,7 @@ python3 ../../src/satire.py \
 		--maxdepth 25
 
 # Abs window : (20,40)
-python3 ../../src/satire.py \
+python3 ../../src/satire+.py \
         --std \
 		--compress \
 		--file ccsd_type2_var_1.txt \
